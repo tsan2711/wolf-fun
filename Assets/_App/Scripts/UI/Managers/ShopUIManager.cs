@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System;
 
-public class ShopUIManager : MonoBehaviour
+public class ShopUIManager : MonoBehaviour, IUIManager
 {
     [Header("Prefab References")]
     [SerializeField] private ShopUIItem shopItemPrefab;

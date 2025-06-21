@@ -14,6 +14,12 @@ public class Worker : MonoBehaviour
     public float MoveSpeed = 2f;
     public Rarity Rarity = Rarity.Common;
 
+    [Header("Animations")]
+    [SerializeField] private Animator _animator;
+
+    public const int AnimationIdle = 0;
+    public const int AnimationMoving = 1;
+
 
     [HideInInspector] public float _moveStartTime;
 
@@ -45,6 +51,7 @@ public class Worker : MonoBehaviour
 
     protected virtual void Awake()
     {
+        if (_animator == null) _animator = GetComponentInChildren<Animator>();
         _transform = transform;
         _navMeshAgent = GetComponent<NavMeshAgent>();
 
@@ -69,6 +76,7 @@ public class Worker : MonoBehaviour
                 CompleteTask();
             }
         }
+        Debug.Log($"Worker {Id} - Current State: {GetCurrentState()}");
     }
 
     private void SetUpLoadingBar()
@@ -108,7 +116,7 @@ public class Worker : MonoBehaviour
         At(working, idle, HasNoTask());
         At(sleeping, idle, IsNotNightTime());
 
-        Any(sleeping, IsNightTime);
+        // Any(sleeping, IsNightTime);
 
         stateMachine.SetState(idle);
 
@@ -117,13 +125,17 @@ public class Worker : MonoBehaviour
         void Any(IState state, Func<bool> condition) => stateMachine.AddAnyTransition(state, condition);
 
         // Condition functions
-        Func<bool> HasTaskAndNotAtTarget() => () => CurrentTask != null && TargetPlot != null && !IsAtTargetPosition() && !IsNightTimeCheck();
-        Func<bool> HasTaskAndAtTarget() => () => CurrentTask != null && TargetPlot != null && IsAtTargetPosition() && !IsNightTimeCheck();
+        // Func<bool> HasTaskAndNotAtTarget() => () => CurrentTask != null && TargetPlot != null && !IsAtTargetPosition() && !IsNightTimeCheck();
+        // Func<bool> HasTaskAndAtTarget() => () => CurrentTask != null && TargetPlot != null && IsAtTargetPosition() && !IsNightTimeCheck();
+       Func<bool> HasTaskAndNotAtTarget() => () => CurrentTask != null && TargetPlot != null && !IsAtTargetPosition();
+        Func<bool> HasTaskAndAtTarget() => () => CurrentTask != null && TargetPlot != null && IsAtTargetPosition();
+       
         Func<bool> IsAtTarget() => () => IsAtTargetPosition();
         Func<bool> HasNoTask() => () => CurrentTask == null || IsNightTimeCheck();
 
         bool IsNightTimeCheck()
-        {
+        { 
+            return false;
             int hour = DateTime.Now.Hour;
             return hour >= 22 || hour <= 6;
         }
@@ -274,6 +286,7 @@ public class Worker : MonoBehaviour
 
     public bool IsNightTime()
     {
+        return false;
         int hour = DateTime.Now.Hour;
         return hour >= 22 || hour <= 6;
     }
@@ -310,5 +323,15 @@ public class Worker : MonoBehaviour
     {
         if (TargetPlot == null) return float.MaxValue;
         return Vector3.Distance(Position, GetPlotPosition(TargetPlot));
+    }
+
+    public void SetAnimationState(int animationState)
+    {
+        if (_animator == null)
+        {
+            Debug.LogWarning("Animator is not assigned on Worker");
+            return;
+        }
+        _animator.SetInteger("State", animationState);
     }
 }

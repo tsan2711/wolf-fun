@@ -13,7 +13,7 @@ public interface IGameUI
     event Action<AnimalType> BuyAnimalRequested;
     event Action BuyWorkerRequested;
     event Action BuyPlotRequested;
-    event Action UpgradeEquipmentRequested;
+    event Action<ProductType> UpgradeEquipmentRequested;
     event Action AutoHarvestRequested;
     event Action<CropType> AutoPlantRequested;
     event Action<AnimalType> AutoPlaceAnimalRequested;  // New event for auto placing animals

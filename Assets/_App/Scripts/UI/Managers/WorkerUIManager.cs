@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEngine.UI;
 using System;
 
-public class WorkerUIManager : MonoBehaviour
+public class WorkerUIManager : MonoBehaviour, IUIManager
 {
     [Header("Prefab References")]
     [SerializeField] private WorkerUIItem workerItemPrefab;

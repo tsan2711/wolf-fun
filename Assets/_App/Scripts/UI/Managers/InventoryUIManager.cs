@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System;
 
-public class InventoryUIManager : MonoBehaviour
+public class InventoryUIManager : MonoBehaviour, IUIManager
 {
     [Header("Prefab References")]
     [SerializeField] private InventoryUIItem inventoryItemPrefab;

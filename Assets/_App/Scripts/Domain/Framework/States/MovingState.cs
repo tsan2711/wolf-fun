@@ -4,6 +4,8 @@ public class MovingState : BaseState
 {
     private float moveSpeed;
 
+    protected override int AnimationState => 1;
+
     public MovingState(Worker worker, float moveSpeed) : base(worker, WorkerState.Moving)
     {
         this.moveSpeed = moveSpeed;

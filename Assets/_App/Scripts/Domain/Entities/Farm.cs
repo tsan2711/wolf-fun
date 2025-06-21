@@ -2,12 +2,14 @@ using UnityEngine;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using DG.Tweening;
+using UnityEditor.Rendering.Universal;
 
 [Serializable]
 public class Farm
 {
     public int Gold { get; private set; } = 50000;
-    public int EquipmentLevel { get; private set; } = 1;
+
     public List<Plot> Plots { get; private set; } = new List<Plot>();
     public List<int> WorkerIds { get; private set; } = new List<int>();
     public Inventory Inventory { get; private set; } = new Inventory();
@@ -21,6 +23,14 @@ public class Farm
 
     [NonSerialized]
     private Dictionary<int, int> _plotReservations = new Dictionary<int, int>();
+    [NonSerialized]
+    private Dictionary<ProductType, int> _upgradeLevels = new Dictionary<ProductType, int>
+    {
+        { ProductType.Strawberry, 1 },
+        { ProductType.Tomato, 1 },
+        { ProductType.Blueberry, 1 },
+        { ProductType.Milk, 1 }
+    };
 
     public Farm()
     {
@@ -112,12 +122,18 @@ public class Farm
         FarmStateChanged?.Invoke();
     }
 
-    public void UpgradeEquipment()
+    public void UpgradeEquipment(ProductType productType)
     {
-        if (SpendGold(500))
+        if (_upgradeLevels.ContainsKey(productType))
         {
-            EquipmentLevel++;
-            FarmStateChanged?.Invoke();
+            int currentLevel = _upgradeLevels[productType];
+            int upgradeCost = 500;
+
+            if (SpendGold(upgradeCost))
+            {
+                _upgradeLevels[productType]++;
+                FarmStateChanged?.Invoke();
+            }
         }
     }
 
@@ -147,7 +163,7 @@ public class Farm
         return false;
     }
 
-      public void ReleasePlot(int plotId, int workerId)
+    public void ReleasePlot(int plotId, int workerId)
     {
         if (_plotReservations.TryGetValue(plotId, out int reservedByWorker) && reservedByWorker == workerId)
         {
@@ -237,6 +253,11 @@ public class Farm
     public int GetEmptyPlots() => Plots.Count(p => p.CanPlant);
     public int GetReadyToHarvestPlots() => Plots.Count(p => p.CanHarvest);
     public int GetTotalPlots() => Plots.Count;
+
+    public int GetEquipmentLevel(ProductType productType)
+    {
+        return _upgradeLevels.TryGetValue(productType, out int level) ? level : 1;
+    }
 
     // Get plots for work
 

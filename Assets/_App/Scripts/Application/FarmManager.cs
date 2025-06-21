@@ -296,7 +296,7 @@ public class FarmManager : MonoBehaviour
             TextMeshProUGUI text = textGO.AddComponent<TextMeshProUGUI>();
             text.text = "Plot";
             text.font = Resources.Load<TMP_FontAsset>("Fonts/LilitaOne-(for 'greater than' symbol)");
-            text.fontSize = 48;
+            text.fontSize = 42;
             text.color = GetZoneColor(plot.Zone);
             text.alignment = TextAlignmentOptions.Center;
 
@@ -307,6 +307,9 @@ public class FarmManager : MonoBehaviour
             // textGO.AddComponent<FacingCamera>();
 
             textGO.transform.rotation = Quaternion.Euler(120, -180, 0);
+
+            textGO.GetComponent<RectTransform>().anchoredPosition = new Vector3(0, 35, 0);
+
 
             textTransform = textGO.transform;
         }

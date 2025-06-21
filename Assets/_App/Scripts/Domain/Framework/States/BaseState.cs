@@ -4,6 +4,7 @@ public abstract class BaseState : IState
 {
     protected Worker worker;
     protected WorkerState stateType;
+    protected abstract int AnimationState { get; }
 
     public BaseState(Worker worker, WorkerState stateType)
     {
@@ -14,6 +15,7 @@ public abstract class BaseState : IState
     public virtual void OnEnter()
     {
         worker.NotifyStateChanged(stateType);
+        worker.SetAnimationState(AnimationState);
     }
 
     public abstract void Tick();

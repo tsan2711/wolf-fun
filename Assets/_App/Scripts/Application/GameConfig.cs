@@ -67,7 +67,7 @@ public class GameConfig
         // Skip header
         for (int i = 1; i < lines.Length; i++)
         {
-            string[] values = lines[i].Split(',');
+            string[] values = lines[i].Split(';');
             if (values.Length >= 6) // Rarity,Rate,SpeedMin,SpeedMax,DurationMin,DurationMax
             {
                 string rarityName = values[0].Trim();

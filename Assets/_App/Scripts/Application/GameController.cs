@@ -33,9 +33,12 @@ public class GameController : MonoBehaviour
     {
         DontDestroyOnLoad(gameObject);
         _config = new GameConfig();
+
         InitializeUI();
 
         StartGame();
+
+        OnFarmStateChanged();
     }
 
     private void StartGame()
@@ -83,7 +86,7 @@ public class GameController : MonoBehaviour
         _gameUI.BuyAnimalRequested += (animalType) => BuyAnimal(animalType);
         _gameUI.BuyWorkerRequested += () => BuyWorker();
         _gameUI.BuyPlotRequested += () => BuyPlot();
-        _gameUI.UpgradeEquipmentRequested += () => UpgradeEquipment();
+        _gameUI.UpgradeEquipmentRequested += (productType) => UpgradeEquipment(productType);
         _gameUI.AutoHarvestRequested += () => AutoHarvestAll();
         _gameUI.AutoPlantRequested += (cropType) => AutoPlantAll(cropType);
         _gameUI.AutoPlaceAnimalRequested += (animalType) => AutoPlaceAnimalAll(animalType); // THÊM MỚI
@@ -426,12 +429,12 @@ public class GameController : MonoBehaviour
         return false;
     }
 
-    public bool UpgradeEquipment()
+    public bool UpgradeEquipment(ProductType productType)
     {
         if (_farm.SpendGold(_config.EquipmentUpgradeCost))
         {
-            _farm.UpgradeEquipment();
-            ShowMessage("Equipment upgraded for 500 gold!");
+            _farm.UpgradeEquipment(productType);
+            ShowMessage("Equipment upgraded for 500 gold! " + productType);
             return true;
         }
 
@@ -718,11 +721,13 @@ public class GameController : MonoBehaviour
         };
     }
 
-    private int GetProductionBonus()
+    private int GetProductionBonus(ProductType productType = ProductType.None)
     {
-        return 1 + (_farm.EquipmentLevel - 1) / 10;
-    }
+        if (productType == ProductType.None) return 0;
 
+        var equipmentLevel = _farm.GetEquipmentLevel(productType);
+        return (int)(equipmentLevel * 0.1f);
+    }
     private void OnFarmStateChanged()
     {
         // Update UI through abstraction

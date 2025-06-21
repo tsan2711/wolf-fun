@@ -6,6 +6,8 @@ public class WorkingState : BaseState
     private float workTimer;
     private Animator animator;
 
+    protected override int AnimationState => 0;
+
     public WorkingState(Worker worker, float workDuration) : base(worker, WorkerState.Working)
     {
         this.workDuration = workDuration;
@@ -15,6 +17,7 @@ public class WorkingState : BaseState
     public override void OnEnter()
     {
         base.OnEnter();
+        workDuration = worker.WorkDuration;
         workTimer = 0f;
 
         // Start work animation
