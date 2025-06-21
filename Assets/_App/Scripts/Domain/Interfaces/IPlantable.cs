@@ -11,4 +11,7 @@ public interface IPlantable
     TimeSpan GetTimeToNextHarvest();
     int GetCurrentHarvests();
     int GetMaxHarvests();
+    void SetMaxHarvests(int maxHarvests);
+    void SetGrowthTime(int growthTimeMinutes);
+    int GetGrowthTimeMinutes();
 }

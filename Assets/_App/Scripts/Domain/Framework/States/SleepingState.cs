@@ -7,12 +7,11 @@ public class SleepingState : BaseState
     public override void OnEnter()
     {
         base.OnEnter();
-        worker.CurrentTask = null;
-        worker.TargetPlot = null;
+        worker.ClearCurrentTask();
     }
 
     public override void Tick()
     {
-        // Just sleep
+        // Sleep until morning
     }
 }

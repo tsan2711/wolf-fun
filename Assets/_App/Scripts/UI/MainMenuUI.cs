@@ -64,31 +64,44 @@ public class MainMenuUI : MonoBehaviour
             }
         }
     }
-    
+
     // ========== BUTTON ACTIONS ==========
-    
+
     private void NewGame()
     {
         // Transition effect
-        transform.DOScale(0f, 0.5f).SetEase(Ease.InBack).OnComplete(() => {
+        transform.DOScale(0f, 0.5f).SetEase(Ease.InBack).OnComplete(() =>
+        {
             SaveLoadSystem.DeleteSave();
             SceneController.Loading(); // Go to game via loading
         });
+        
+        SetContinue(0); // Reset continue state
     }
-    
+
     private void ContinueGame()
     {
         if (SaveLoadSystem.HasSaveFile())
         {
-            transform.DOScale(0f, 0.5f).SetEase(Ease.InBack).OnComplete(() => {
+            transform.DOScale(0f, 0.5f).SetEase(Ease.InBack).OnComplete(() =>
+            {
                 SceneController.Game(); // Go to game via loading
             });
         }
+
+        SetContinue(1);
     }
     
+    
+    private void SetContinue(int value)
+    {
+        PlayerPrefs.SetInt("ContinueGame", value);
+    }
+
     private void QuitGame()
     {
-        GetComponent<CanvasGroup>().DOFade(0f, 0.5f).OnComplete(() => {
+        GetComponent<CanvasGroup>().DOFade(0f, 0.5f).OnComplete(() =>
+        {
             SceneController.Exit();
         });
     }

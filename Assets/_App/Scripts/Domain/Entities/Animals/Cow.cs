@@ -2,52 +2,20 @@ using System;
 using UnityEngine;
 
 [Serializable]
-public class Cow : IPlantable
+public class Cow : Crop
 {
-    public TimeSpan ProductionTime => TimeSpan.FromMinutes(30);
-    public int MaxProductions => 100;
-    public ProductType ProductType => ProductType.Milk;
-    public string DisplayName => "Cow";
+    public override ProductType ProductType => ProductType.Milk;
+    public override string DisplayName => "Cow";
 
-    public int CurrentProductions { get; private set; }
-    public DateTime PlacedTime { get; private set; }
-    public DateTime LastProductionTime { get; private set; }
-
-    public void Plant(DateTime plantTime)
+    public Cow(int growthTimeMinutes, int maxHarvests)
+        : base(growthTimeMinutes, maxHarvests)
     {
-        PlacedTime = plantTime;
-        LastProductionTime = plantTime;
     }
 
-    public bool IsReadyToHarvest()
+    public Cow() : base()
     {
-        return DateTime.Now >= LastProductionTime.Add(ProductionTime) && 
-               CurrentProductions < MaxProductions;
+        // Override default values cho Cow
+        this.growthTimeMinutes = 30;
+        this.maxHarvests = 100;
     }
-
-    public ProductType Harvest()
-    {
-        if (!IsReadyToHarvest()) return ProductType.None;
-
-        CurrentProductions++;
-        LastProductionTime = DateTime.Now;
-        return ProductType.Milk;
-    }
-
-    public bool IsExpired()
-    {
-        return CurrentProductions >= MaxProductions;
-    }
-
-    public string GetDisplayName() => DisplayName;
-
-    public TimeSpan GetTimeToNextHarvest()
-    {
-        if (IsReadyToHarvest()) return TimeSpan.Zero;
-        var nextProduction = LastProductionTime.Add(ProductionTime);
-        return nextProduction > DateTime.Now ? nextProduction - DateTime.Now : TimeSpan.Zero;
-    }
-
-    public int GetCurrentHarvests() => CurrentProductions;
-    public int GetMaxHarvests() => MaxProductions;
 }

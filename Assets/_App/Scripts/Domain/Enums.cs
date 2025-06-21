@@ -43,3 +43,31 @@ public enum TaskType
     Milk,
     Feed,
 }
+
+public enum UIItemType
+{
+    Seed,
+    Product,
+    Upgrade,
+    ShopItem
+}
+
+public enum PlotZone
+{
+    Strawberry,
+    Tomato,
+    Blueberry,
+    Cow
+}
+
+public enum Rarity
+{
+    Common,
+    Uncommon,
+    Rare,
+    Epic,
+    Legendary
+}
+
+
+

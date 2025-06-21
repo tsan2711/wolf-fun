@@ -3,20 +3,25 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine.AI;
 
 public class GameController : MonoBehaviour
 {
-    [Header("Worker Prefab")]
+    [Header("Worker Config")]
     [SerializeField] private GameObject workerPrefab;
+    [SerializeField] private FillBar workerFillBar;
+    [SerializeField] private Vector3 fillBarOffset = new Vector3(0, 1.5f, 0);
 
     [Header("Farm Settings")]
     [SerializeField] private Transform farmContainer;
+
+    [Header("3D Farm Layout")]
+    [SerializeField] private FarmManager farmLayoutManager;
 
     private Farm _farm;
     private GameConfig _config;
     private Coroutine _gameLoopCoroutine;
     private List<Worker> _workerGameObjects = new List<Worker>();
-
     public event Action<Farm> FarmStateChanged;
     public event Action<string> MessageDisplayed;
 
@@ -24,21 +29,37 @@ public class GameController : MonoBehaviour
 
     private IGameUI _gameUI;
 
-
-
     private void Awake()
     {
         DontDestroyOnLoad(gameObject);
         _config = new GameConfig();
-
-
         InitializeUI();
+
+        StartGame();
+    }
+
+    private void StartGame()
+    {
+        int isContinue = PlayerPrefs.GetInt("ContinueGame", 0);
+        if (isContinue == 1)
+            LoadGame();
+        else
+            StartNewGame();
+
+    }
+
+    private void InitializeFarm()
+    {
+        if (farmLayoutManager != null)
+        {
+            farmLayoutManager.Initialize(_farm);
+        }
     }
 
     private void InitializeUI()
     {
         // Try to find Unity UI first
-        _gameUI = FindObjectOfType<MainGameUI>();
+        _gameUI = FindAnyObjectByType<MainGameUI>();
 
         // Fallback to Console if no Unity UI found
         // if (_gameUI == null)
@@ -54,15 +75,20 @@ public class GameController : MonoBehaviour
 
     private void SubscribeToUIEvents()
     {
+        if (_gameUI == null) return;
+
         _gameUI.NewGameRequested += StartNewGame;
         _gameUI.ContinueGameRequested += LoadGame;
-        _gameUI.PlantCropRequested += (plotId, cropType) => PlantCrop(plotId, cropType);
-        _gameUI.HarvestPlotRequested += (plotId) => HarvestPlot(plotId);
-        _gameUI.BuySeedsRequested += (cropType) => BuySeeds(cropType, 1);
+        _gameUI.BuySeedsRequested += (cropType, amount) => BuySeeds(cropType, amount);
+        _gameUI.BuyAnimalRequested += (animalType) => BuyAnimal(animalType);
         _gameUI.BuyWorkerRequested += () => BuyWorker();
+        _gameUI.BuyPlotRequested += () => BuyPlot();
+        _gameUI.UpgradeEquipmentRequested += () => UpgradeEquipment();
         _gameUI.AutoHarvestRequested += () => AutoHarvestAll();
+        _gameUI.AutoPlantRequested += (cropType) => AutoPlantAll(cropType);
+        _gameUI.AutoPlaceAnimalRequested += (animalType) => AutoPlaceAnimalAll(animalType); // THÊM MỚI
+        _gameUI.SellProductRequested += (productType, amount) => SellProduct(productType, amount);
     }
-
 
 
     public void StartNewGame()
@@ -73,8 +99,10 @@ public class GameController : MonoBehaviour
         // Create initial worker GameObjects
         CreateWorkerGameObjects();
 
+        InitializeFarm();
+
         StartGameLoop();
-        FarmStateChanged?.Invoke(_farm);
+        OnFarmStateChanged(); // Update UI
     }
 
     public void LoadGame()
@@ -117,26 +145,89 @@ public class GameController : MonoBehaviour
         }
     }
 
+
     private void CreateWorkerGameObject(int workerId)
     {
         GameObject workerGO = Instantiate(workerPrefab, farmContainer);
-        workerGO.name = $"Worker_{workerId}";
+        Vector3 scale = farmContainer.localScale;
+        workerGO.transform.localScale = new Vector3(
+            1f / scale.x,
+            1f / scale.y,
+            1f / scale.z
+        );
 
         Worker worker = workerGO.GetComponent<Worker>();
         if (worker == null)
             worker = workerGO.AddComponent<Worker>();
 
+        // Ensure NavMeshAgent is attached
+        NavMeshAgent navAgent = workerGO.GetComponent<NavMeshAgent>();
+        if (navAgent == null)
+            navAgent = workerGO.AddComponent<NavMeshAgent>();
+
+        // NEW: Generate random rarity and stats based on config
+        Rarity workerRarity = _config.GenerateWorkerRarity();
+        float workerSpeed = _config.GenerateWorkerSpeed(workerRarity);
+        float workerDuration = _config.GenerateWorkerDuration(workerRarity);
+
+        // Set worker properties
         worker.Id = workerId;
+        worker.Rarity = workerRarity;
+        worker.MoveSpeed = workerSpeed;
+        worker.WorkDuration = workerDuration;
+
+
+        // Subscribe to events
         worker.TaskCompleted += OnWorkerTaskCompleted;
         worker.StateChanged += OnWorkerStateChanged;
+
+        // Simple spawn: use farmContainer position (already on NavMesh)
+        Vector3 spawnPosition = farmContainer.position + Vector3.right * workerId * 2f;
+        navAgent.Warp(spawnPosition);
+
+        ValidateWorkerEvents(worker);
+
+        workerGO.name = $"Worker_{workerId}_{workerRarity}";
 
         // Register worker with farm
         _farm.RegisterWorker(worker);
         _workerGameObjects.Add(worker);
 
-        Debug.Log($"Created Worker {workerId}");
+        Debug.Log($"Created Worker {workerId} with rarity {workerRarity} (Speed: {workerSpeed:F2}, Duration: {workerDuration:F1}s) at {spawnPosition}");
     }
 
+    private void ValidateWorkerEvents(Worker worker)
+    {
+        var fillBar = Instantiate(workerFillBar, worker.transform);
+        fillBar.transform.localPosition = fillBarOffset; // Remove += operator
+        fillBar.Deactivate(); // Start deactivated
+
+        // Subscribe to TaskStateChanged for progress updates
+        worker.TaskStateChanged += (progress) =>
+        {
+            if (!fillBar.gameObject.activeInHierarchy)
+            {
+                fillBar.Activate();
+            }
+            fillBar.SetProgress(progress);
+        };
+
+        // Subscribe to TaskCompleted for completion
+        worker.TaskCompleted += (w) =>
+        {
+            fillBar.ResetProgress();
+            fillBar.Deactivate();
+        };
+
+        // Subscribe to StateChanged for state-based activation
+        worker.StateChanged += (w, state) =>
+        {
+            if (state == WorkerState.Working)
+                fillBar.Activate();
+            else if (state == WorkerState.Idle)
+                fillBar.Deactivate();
+        };
+    }
     // Manual farming methods
     public bool PlantCrop(int plotId, CropType cropType)
     {
@@ -159,7 +250,7 @@ public class GameController : MonoBehaviour
         return true;
     }
 
-    public bool PlaceAnimal(int plotId, AnimalType animalType)
+    public new bool PlaceAnimal(int plotId, AnimalType animalType)
     {
         var plot = _farm.GetPlot(plotId);
         if (plot == null || !plot.CanPlant)
@@ -176,10 +267,12 @@ public class GameController : MonoBehaviour
 
         var animal = CreateAnimal(animalType);
         plot.Plant(animal);
+
+        // Visual feedback
+        ShowMessage($"Placed {animalType} on plot {plotId}!");
         OnFarmStateChanged();
         return true;
     }
-
     public bool HarvestPlot(int plotId)
     {
         var plot = _farm.GetPlot(plotId);
@@ -204,27 +297,60 @@ public class GameController : MonoBehaviour
     // Worker automation methods
     public void AutoAssignTasks()
     {
-        var tasks = _farm.GetWorkTasks();
+        var availableTasks = _farm.GetWorkTasks();
+        var availableWorkers = _farm.GetWorkers().Where(w => w.IsAvailable).ToList();
 
-        foreach (var task in tasks)
+        Debug.Log($"AutoAssignTasks: {availableTasks.Count} tasks, {availableWorkers.Count} available workers");
+
+        // Assign one task per worker
+        int assignedTasks = 0;
+        for (int i = 0; i < Math.Min(availableTasks.Count, availableWorkers.Count); i++)
         {
-            var availableWorker = _farm.GetBestAvailableWorker();
-            if (availableWorker != null)
+            var task = availableTasks[i];
+            var worker = availableWorkers[i];
+
+            Debug.Log($"Attempting to assign task for plot {task.Plot.Id} to worker {worker.Id}");
+
+            if (AssignTaskToWorker(worker, task))
             {
-                AssignTaskToWorker(availableWorker, task);
+                assignedTasks++;
+                Debug.Log($"Successfully assigned task to worker {worker.Id}");
             }
             else
             {
-                break; // No more available workers
+                Debug.Log($"Failed to assign task to worker {worker.Id}");
             }
         }
+
+        Debug.Log($"Total tasks assigned: {assignedTasks}");
     }
 
-    private void AssignTaskToWorker(Worker worker, SimpleTask task)
+
+
+    private bool AssignTaskToWorker(Worker worker, SimpleTask task)
     {
+        // Check if worker is still available
+        if (!worker.IsAvailable)
+        {
+            Debug.Log($"Worker {worker.Id} is no longer available");
+            return false;
+        }
+
+        // Check if plot is still harvestable and not reserved
+        if (!task.Plot.CanHarvest)
+        {
+            Debug.Log($"Plot {task.Plot.Id} is no longer harvestable");
+            return false;
+        }
+
+        if (_farm.IsPlotReserved(task.Plot.Id))
+        {
+            Debug.Log($"Plot {task.Plot.Id} is already reserved");
+            return false;
+        }
+
         IWorkTask workTask = task.Type switch
         {
-            TaskType.Plant => new PlantTask(task.Plot, task.CropType.Value, _farm),
             TaskType.Harvest => new HarvestTask(task.Plot, _farm),
             TaskType.Milk => new MilkTask(task.Plot, _farm),
             _ => null
@@ -234,6 +360,12 @@ public class GameController : MonoBehaviour
         {
             worker.AssignTask(workTask, task.Plot);
             Debug.Log($"Assigned {task.Type} task to Worker {worker.Id} for plot {task.Plot.Id}");
+            return true;
+        }
+        else
+        {
+            Debug.LogWarning($"No work task created for type: {task.Type}");
+            return false;
         }
     }
 
@@ -325,6 +457,21 @@ public class GameController : MonoBehaviour
     public void AutoHarvestAll()
     {
         var readyPlots = _farm.GetPlotsReadyToHarvest();
+        if (readyPlots.Count == 0)
+        {
+            ShowMessage("No plots ready to harvest!");
+            return;
+        }
+
+        // Kiểm tra có workers không
+        var availableWorkers = _farm.GetAvailableWorkers();
+        if (availableWorkers == 0)
+        {
+            ShowMessage("No workers available for harvesting!");
+            return;
+        }
+
+        int tasksAssigned = 0;
         foreach (var plot in readyPlots)
         {
             var availableWorker = _farm.GetBestAvailableWorker();
@@ -336,29 +483,123 @@ public class GameController : MonoBehaviour
                     Type = plot.Content is Cow ? TaskType.Milk : TaskType.Harvest
                 };
                 AssignTaskToWorker(availableWorker, task);
+                tasksAssigned++;
+            }
+            else
+            {
+                break; // No more workers available
             }
         }
-    }
 
+        if (tasksAssigned > 0)
+        {
+            ShowMessage($"Assigned {tasksAssigned} harvest tasks to workers!");
+        }
+        else
+        {
+            ShowMessage("No workers available for harvesting!");
+        }
+    }
     public void AutoPlantAll(CropType cropType)
     {
-        var emptyPlots = _farm.GetEmptyPlotsForPlanting();
+        var emptyPlots = _farm.GetEmptyPlotsForCrop(cropType);
+        Debug.Log($"Empty plots for {cropType}: {emptyPlots.Count}");
+
+        if (emptyPlots.Count == 0)
+        {
+            ShowMessage($"No empty {cropType} plots available!");
+            return;
+        }
+
+        if (_farm.Inventory.GetSeedCount(cropType) == 0)
+        {
+            ShowMessage($"No {cropType} seeds available!");
+            return;
+        }
+
+        int plantsPlanted = 0;
         foreach (var plot in emptyPlots)
         {
             if (_farm.Inventory.GetSeedCount(cropType) > 0)
             {
-                var availableWorker = _farm.GetBestAvailableWorker();
-                if (availableWorker != null)
+                if (plot.CanPlantType(cropType) && _farm.Inventory.UseSeeds(cropType, 1))
                 {
-                    var task = new SimpleTask
-                    {
-                        Plot = plot,
-                        Type = TaskType.Plant,
-                        CropType = cropType
-                    };
-                    AssignTaskToWorker(availableWorker, task);
+                    var crop = CreateCrop(cropType);
+                    plot.Plant(crop);
+                    plantsPlanted++;
+                    Debug.Log($"Auto planted {cropType} on plot {plot.Id} (Zone: {plot.Zone})");
                 }
             }
+            else
+            {
+                break;
+            }
+        }
+
+        if (plantsPlanted > 0)
+        {
+            ShowMessage($"Auto planted {plantsPlanted} {cropType} crops in {cropType} zone!");
+
+            // FORCE trigger farm state changed
+            _farm.TriggerFarmStateChanged();
+            OnFarmStateChanged();
+
+            Debug.Log("Auto plant completed - FarmStateChanged triggered");
+        }
+        else
+        {
+            ShowMessage($"Could not plant any {cropType} in {cropType} zone!");
+        }
+    }
+
+    public void AutoPlaceAnimalAll(AnimalType animalType)
+    {
+        var emptyPlots = _farm.GetEmptyPlotsForAnimal(animalType);
+
+        if (emptyPlots.Count == 0)
+        {
+            ShowMessage($"No empty {animalType} plots available!");
+            return;
+        }
+
+        if (_farm.Inventory.GetAnimalCount(animalType) == 0)
+        {
+            ShowMessage($"No {animalType} available!");
+            return;
+        }
+
+        int animalsPlaced = 0;
+        foreach (var plot in emptyPlots)
+        {
+            if (_farm.Inventory.GetAnimalCount(animalType) > 0)
+            {
+                if (plot.CanPlaceAnimal(animalType) && _farm.Inventory.UseAnimals(animalType, 1))
+                {
+                    var animal = CreateAnimal(animalType);
+                    plot.Plant(animal);
+                    animalsPlaced++;
+                    Debug.Log($"Auto placed {animalType} on plot {plot.Id} (Zone: {plot.Zone})");
+                }
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        if (animalsPlaced > 0)
+        {
+            ShowMessage($"Auto placed {animalsPlaced} {animalType} in cow zone!");
+
+            // FORCE trigger farm state changed
+            _farm.TriggerFarmStateChanged();
+            OnFarmStateChanged();
+
+            Debug.Log("Auto place animal completed - FarmStateChanged triggered");
+        }
+        else
+        {
+            ShowMessage($"Could not place any {animalType} in cow zone!");
         }
     }
 
@@ -444,20 +685,35 @@ public class GameController : MonoBehaviour
     // Factory methods
     private IPlantable CreateCrop(CropType cropType)
     {
+        int harvestTime = _config.GetHarvestTime(cropType.ToString());
+        int maxHarvests = _config.GetMaxHarvests(cropType.ToString());
+
+        Debug.Log("Creating crop: " + cropType +
+                  " with harvest time: " + harvestTime +
+                  " and max harvests: " + maxHarvests);
+
         return cropType switch
         {
-            CropType.Tomato => new TomatoCrop(),
-            CropType.Blueberry => new BlueberryCrop(),
-            CropType.Strawberry => new StrawberryCrop(),
+            CropType.Tomato => new TomatoCrop(harvestTime, maxHarvests),
+            CropType.Blueberry => new BlueberryCrop(harvestTime, maxHarvests),
+            CropType.Strawberry => new StrawberryCrop(harvestTime, maxHarvests),
             _ => throw new ArgumentException("Unknown crop type")
         };
     }
 
     private IPlantable CreateAnimal(AnimalType animalType)
     {
+        int harvestTime = _config.GetHarvestTime(animalType.ToString());
+        int maxHarvests = _config.GetMaxHarvests(animalType.ToString());
+
+        Debug.Log("Creating animal: " + animalType +
+                  " with harvest time: " + harvestTime +
+                  " and max harvests: " + maxHarvests);
+
+
         return animalType switch
         {
-            AnimalType.Cow => new Cow(),
+            AnimalType.Cow => new Cow(harvestTime, maxHarvests),
             _ => throw new ArgumentException("Unknown animal type")
         };
     }
@@ -471,7 +727,7 @@ public class GameController : MonoBehaviour
     {
         // Update UI through abstraction
         _gameUI?.UpdateFarmData(_farm);
-        
+
         // Keep existing events for backward compatibility
         FarmStateChanged?.Invoke(_farm);
     }
@@ -480,7 +736,7 @@ public class GameController : MonoBehaviour
     {
         // Update UI through abstraction
         _gameUI?.ShowMessage(message);
-        
+
         // Keep existing events for backward compatibility
         MessageDisplayed?.Invoke(message);
     }
@@ -513,90 +769,4 @@ public class GameController : MonoBehaviour
             }
         }
     }
-}
-
-// Work task implementations
-public class PlantTask : IWorkTask
-{
-    private Plot _plot;
-    private CropType _cropType;
-    private Farm _farm;
-
-    public PlantTask(Plot plot, CropType cropType, Farm farm)
-    {
-        _plot = plot;
-        _cropType = cropType;
-        _farm = farm;
-    }
-
-    public void Execute()
-    {
-        if (_farm.Inventory.UseSeeds(_cropType, 1))
-        {
-            var crop = CreateCrop(_cropType);
-            _plot.Plant(crop);
-            Debug.Log($"Worker planted {_cropType} on plot {_plot.Id}");
-        }
-    }
-
-    public TaskType GetTaskType() => TaskType.Plant;
-
-    private IPlantable CreateCrop(CropType cropType)
-    {
-        return cropType switch
-        {
-            CropType.Tomato => new TomatoCrop(),
-            CropType.Blueberry => new BlueberryCrop(),
-            CropType.Strawberry => new StrawberryCrop(),
-            _ => throw new ArgumentException("Unknown crop type")
-        };
-    }
-}
-
-public class HarvestTask : IWorkTask
-{
-    private Plot _plot;
-    private Farm _farm;
-
-    public HarvestTask(Plot plot, Farm farm)
-    {
-        _plot = plot;
-        _farm = farm;
-    }
-
-    public void Execute()
-    {
-        var product = _plot.Harvest();
-        if (product.HasValue && product.Value != ProductType.None)
-        {
-            _farm.Inventory.AddProduct(product.Value, 1);
-            Debug.Log($"Worker harvested {product.Value} from plot {_plot.Id}");
-        }
-    }
-
-    public TaskType GetTaskType() => TaskType.Harvest;
-}
-
-public class MilkTask : IWorkTask
-{
-    private Plot _plot;
-    private Farm _farm;
-
-    public MilkTask(Plot plot, Farm farm)
-    {
-        _plot = plot;
-        _farm = farm;
-    }
-
-    public void Execute()
-    {
-        var product = _plot.Harvest();
-        if (product.HasValue && product.Value == ProductType.Milk)
-        {
-            _farm.Inventory.AddProduct(ProductType.Milk, 1);
-            Debug.Log($"Worker milked cow on plot {_plot.Id}");
-        }
-    }
-
-    public TaskType GetTaskType() => TaskType.Milk;
 }

@@ -12,14 +12,22 @@ public class MovingState : BaseState
     public override void OnEnter()
     {
         base.OnEnter();
-        Debug.Log($"Worker {worker.Id} moving to plot {worker.TargetPlot?.Id}");
+        if (worker.TargetPlot != null)
+        {
+            Vector3 targetPosition = GetPlotPosition(worker.TargetPlot);
+            worker.MoveTowards(targetPosition);
+        }
     }
 
     public override void Tick()
     {
-        if (worker.TargetPlot == null) return;
+        // Movement handled by NavMeshAgent
+        // State transition handled by condition functions
+    }
 
-        Vector3 targetPosition = GetPlotPosition(worker.TargetPlot);
-        worker.MoveTowards(targetPosition);
+    public override void OnExit()
+    {
+        base.OnExit();
+        worker.StopMoving();
     }
 }

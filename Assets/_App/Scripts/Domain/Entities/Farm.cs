@@ -6,7 +6,7 @@ using System.Linq;
 [Serializable]
 public class Farm
 {
-    public int Gold { get; private set; } = 150;
+    public int Gold { get; private set; } = 50000;
     public int EquipmentLevel { get; private set; } = 1;
     public List<Plot> Plots { get; private set; } = new List<Plot>();
     public List<int> WorkerIds { get; private set; } = new List<int>();
@@ -19,6 +19,9 @@ public class Farm
     public event Action<int> GoldChanged;
     public event Action FarmStateChanged;
 
+    [NonSerialized]
+    private Dictionary<int, int> _plotReservations = new Dictionary<int, int>();
+
     public Farm()
     {
         InitializeStartingFarm();
@@ -26,20 +29,69 @@ public class Farm
 
     private void InitializeStartingFarm()
     {
-        // 3 starting plots
-        for (int i = 0; i < 3; i++)
-        {
-            Plots.Add(new Plot(i));
-        }
+        // Tạo plots theo zones - mỗi zone 3 plots
+        CreatePlotsForZone(PlotZone.Strawberry, 3);
+        CreatePlotsForZone(PlotZone.Tomato, 3);
+        CreatePlotsForZone(PlotZone.Blueberry, 3);
+        CreatePlotsForZone(PlotZone.Cow, 3);
 
-        // Starting resources
+
+        // Starting resources - TẤT CẢ SEEDS = 10
         Inventory.AddSeeds(CropType.Tomato, 10);
         Inventory.AddSeeds(CropType.Blueberry, 10);
+        Inventory.AddSeeds(CropType.Strawberry, 10);  // THÊM DÒNG NÀY
         Inventory.AddAnimals(AnimalType.Cow, 2);
-        
+
         // 1 starting worker
         WorkerIds.Add(0);
     }
+
+    private void CreatePlotsForZone(PlotZone zone, int count)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            int plotId = Plots.Count; // Sequential ID
+            Plots.Add(new Plot(plotId, zone));
+        }
+    }
+
+    public List<Plot> GetEmptyPlotsForZone(PlotZone zone)
+    {
+        return Plots.Where(p => p.Zone == zone && p.CanPlant).ToList();
+    }
+
+    public List<Plot> GetEmptyPlotsForCrop(CropType cropType)
+    {
+        PlotZone targetZone = cropType switch
+        {
+            CropType.Strawberry => PlotZone.Strawberry,
+            CropType.Tomato => PlotZone.Tomato,
+            CropType.Blueberry => PlotZone.Blueberry,
+            _ => throw new ArgumentException($"Unknown crop type: {cropType}")
+        };
+
+        return GetEmptyPlotsForZone(targetZone);
+    }
+
+    public List<Plot> GetEmptyPlotsForAnimal(AnimalType animalType)
+    {
+        PlotZone targetZone = animalType switch
+        {
+            AnimalType.Cow => PlotZone.Cow,
+            _ => throw new ArgumentException($"Unknown animal type: {animalType}")
+        };
+
+        return GetEmptyPlotsForZone(targetZone);
+    }
+
+    public List<Plot> GetPlotsReadyToHarvestInZone(PlotZone zone)
+    {
+        return Plots.Where(p => p.Zone == zone && p.CanHarvest).ToList();
+    }
+
+    // Override existing methods
+    public List<Plot> GetEmptyPlotsForPlanting() => Plots.Where(p => p.CanPlant).ToList();
+    public List<Plot> GetPlotsReadyToHarvest() => Plots.Where(p => p.CanHarvest).ToList();
 
     public bool SpendGold(int amount)
     {
@@ -80,17 +132,57 @@ public class Farm
         }
         return false;
     }
-
+    #region Plot Management
     public bool BuyPlot()
     {
         if (SpendGold(500))
         {
             int newPlotId = Plots.Count;
-            Plots.Add(new Plot(newPlotId));
+            PlotZone targetZone = GetZoneWithFewestPlots();
+
+            Plots.Add(new Plot(newPlotId, targetZone));
             FarmStateChanged?.Invoke();
             return true;
         }
         return false;
+    }
+
+      public void ReleasePlot(int plotId, int workerId)
+    {
+        if (_plotReservations.TryGetValue(plotId, out int reservedByWorker) && reservedByWorker == workerId)
+        {
+            _plotReservations.Remove(plotId);
+        }
+    }
+
+    private PlotZone GetZoneWithFewestPlots()
+    {
+        var zoneCounts = new Dictionary<PlotZone, int>
+        {
+            { PlotZone.Strawberry, 0 },
+            { PlotZone.Tomato, 0 },
+            { PlotZone.Blueberry, 0 },
+            { PlotZone.Cow, 0 }
+        };
+
+        foreach (var plot in Plots)
+        {
+            zoneCounts[plot.Zone]++;
+        }
+
+        return zoneCounts.OrderBy(kvp => kvp.Value).First().Key;
+    }
+
+    public bool ReservePlot(int plotId, int workerId)
+    {
+        if (_plotReservations.ContainsKey(plotId))
+        {
+            // Plot already reserved by another worker
+            return false;
+        }
+
+        _plotReservations[plotId] = workerId;
+        return true;
     }
 
     public Plot GetPlot(int id) => Plots.FirstOrDefault(p => p.Id == id);
@@ -98,11 +190,35 @@ public class Farm
     // Worker management
     public void RegisterWorker(Worker worker)
     {
+        Debug.Log($"Registering worker {worker.Id} to farm");
         if (!_workers.Contains(worker))
         {
             _workers.Add(worker);
         }
     }
+
+    public bool IsPlotReserved(int plotId)
+    {
+        return _plotReservations.ContainsKey(plotId);
+    }
+
+
+
+    public bool BuyPlotForZone(PlotZone zone)
+    {
+        if (SpendGold(500))
+        {
+            int newPlotId = Plots.Count;
+            Plots.Add(new Plot(newPlotId, zone));
+            FarmStateChanged?.Invoke();
+            return true;
+        }
+        return false;
+    }
+
+
+    #endregion
+
 
     public void UnregisterWorker(Worker worker)
     {
@@ -123,8 +239,6 @@ public class Farm
     public int GetTotalPlots() => Plots.Count;
 
     // Get plots for work
-    public List<Plot> GetPlotsReadyToHarvest() => Plots.Where(p => p.CanHarvest).ToList();
-    public List<Plot> GetEmptyPlotsForPlanting() => Plots.Where(p => p.CanPlant).ToList();
 
     public Worker GetBestAvailableWorker() => _workers.FirstOrDefault(w => w.IsAvailable);
 
@@ -133,45 +247,32 @@ public class Farm
     {
         var tasks = new List<SimpleTask>();
 
-        // First: Harvest ready plots
+        // Only include plots that are ready to harvest AND not reserved by other workers
         foreach (var plot in GetPlotsReadyToHarvest())
         {
-            tasks.Add(new SimpleTask
-            {
-                Plot = plot,
-                Type = plot.Content is Cow ? TaskType.Milk : TaskType.Harvest
-            });
-        }
-
-        // Second: Plant on empty plots if we have seeds
-        foreach (var plot in GetEmptyPlotsForPlanting())
-        {
-            var cropType = GetNextCropToPlant();
-            if (cropType.HasValue)
+            if (!IsPlotReserved(plot.Id))
             {
                 tasks.Add(new SimpleTask
                 {
                     Plot = plot,
-                    Type = TaskType.Plant,
-                    CropType = cropType.Value
+                    Type = plot.Content is Cow ? TaskType.Milk : TaskType.Harvest
                 });
             }
         }
 
         return tasks;
     }
-
     private CropType? GetNextCropToPlant()
     {
         if (Inventory.GetSeedCount(CropType.Tomato) > 0)
             return CropType.Tomato;
-        
+
         if (Inventory.GetSeedCount(CropType.Blueberry) > 0)
             return CropType.Blueberry;
-        
+
         if (Inventory.GetSeedCount(CropType.Strawberry) > 0)
             return CropType.Strawberry;
-        
+
         return null;
     }
 
@@ -180,4 +281,10 @@ public class Farm
         int hour = DateTime.Now.Hour;
         return hour >= 22 || hour <= 6;
     }
+
+    public void TriggerFarmStateChanged()
+    {
+        FarmStateChanged?.Invoke();
+    }
+
 }

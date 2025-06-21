@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fde351c4e2de7457ebb151b832c5aa8d, type: 3}
+  m_Name: InventoryIconData
+  m_EditorClassIdentifier: 
+  tomatoSeedIcon: {fileID: 21300000, guid: 2dc091acfeffb4f46aa7bcd20064e3fa, type: 3}
+  blueberrySeedIcon: {fileID: 21300000, guid: 80dcde63391574ae9864ea9ef85873b6, type: 3}
+  strawberrySeedIcon: {fileID: 21300000, guid: a73fd396c5f9444beabd85be57207963, type: 3}
+  tomatoIcon: {fileID: 21300000, guid: 6a0b37fab0eb74bf8a8ff766c5defa2c, type: 3}
+  blueberryIcon: {fileID: 21300000, guid: bfd2c4a8edbec4755905083ea8017701, type: 3}
+  strawberryIcon: {fileID: 21300000, guid: cad10ed0bd9e549ad847e7dfeeb34d66, type: 3}
+  milkIcon: {fileID: 21300000, guid: 9c2691add18e64351aceb9dd6f7b8542, type: 3}
+  cowIcon: {fileID: 21300000, guid: 3233473a4e58d42769ea0b540cf9cec8, type: 3}
+  strawberryUpgradeIcon: {fileID: 21300000, guid: 911aad2f0821a499d940f8150b138001, type: 3}
+  blueberryUpgradeIcon: {fileID: 21300000, guid: ed5d3696fa0ac468289da75bbef0ecc9, type: 3}
+  tomatoUpgradeIcon: {fileID: 21300000, guid: ed5d3696fa0ac468289da75bbef0ecc9, type: 3}
+  cowUpgradeIcon: {fileID: 21300000, guid: d4cdbec5b26034eabb7b56ea74335fb9, type: 3}
+  WorkerIcon: {fileID: 21300000, guid: 2b6f031e782a3429090410cad74773cf, type: 3}

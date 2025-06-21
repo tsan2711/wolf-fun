@@ -1,129 +1,225 @@
 using UnityEngine;
-using UnityEngine.UI;
-using System;
 using System.Collections.Generic;
+using UnityEngine.UI;
+using TMPro;
+using UnityEditor.ShaderGraph.Serialization;
+using System;
 
 public class MainGameUI : MonoBehaviour, IGameUI
 {
-    [Header("Resource Display")]
-    [SerializeField] private Text goldText;
-    [SerializeField] private Text equipmentLevelText;
-    [SerializeField] private Text workersText;
-    [SerializeField] private Text plotsText;
+    [Header("UI Managers")]
+    [SerializeField] private InventoryUIManager inventoryUIManager;
+    [SerializeField] private ShopUIManager shopUIManager;
+    [SerializeField] private UpgradeUIManager upgradeUIManager;
+    [SerializeField] private WorkerUIManager workerUIManager;
+
+    [Header("Basic UI")]
+    [SerializeField] private TextMeshProUGUI goldText;
+    [SerializeField] private TextMeshProUGUI workersText;
+    [SerializeField] private TextMeshProUGUI messageText;
+    [SerializeField] private GameObject messagePanel;
 
     [Header("Action Buttons")]
     [SerializeField] private Button newGameButton;
     [SerializeField] private Button continueGameButton;
-    [SerializeField] private Button buyWorkerButton;
     [SerializeField] private Button autoHarvestButton;
     [SerializeField] private Button autoPlantTomatoButton;
+    [SerializeField] private Button autoPlantBlueberryButton;
+    [SerializeField] private Button autoPlantStrawberryButton;  // THÊM MỚI
+    [SerializeField] private Button autoPlaceCowButton;        // THÊM MỚI
+    [SerializeField] private Button expandPlotButton;
 
-    [Header("Shop Buttons")]
-    [SerializeField] private Button buyTomatoSeedsButton;
-    [SerializeField] private Button buyBlueberrySeedsButton;
+    [Header("Navigation Buttons")]
+    [SerializeField] private Button inventoryButton;
+    [SerializeField] private Button shopButton;
+    [SerializeField] private Button upgradeButton;
+    [SerializeField] private Button workerButton;
 
-    [Header("Plot UI")]
-    [SerializeField] private Transform plotsContainer;
-    [SerializeField] private GameObject plotUIPrefab;
+    private Color _defaultButtonColor = Color.gray;
+    private Color _highlightedButtonColor = new Color(0.8f, 0.8f, 0.2f);
 
-    [Header("Message UI")]
-    [SerializeField] private Text messageText;
-    [SerializeField] private GameObject messagePanel;
-
-    // Events
+    // Events from IGameUI interface
     public event Action NewGameRequested;
     public event Action ContinueGameRequested;
-    public event Action<int, CropType> PlantCropRequested;
-    public event Action<int> HarvestPlotRequested;
-    public event Action<CropType> BuySeedsRequested;
+    public event Action<CropType, int> BuySeedsRequested;
+    public event Action<AnimalType> BuyAnimalRequested;
     public event Action BuyWorkerRequested;
+    public event Action BuyPlotRequested;
+    public event Action UpgradeEquipmentRequested;
     public event Action AutoHarvestRequested;
-
-    private List<UnityPlotUI> _plotUIs = new List<UnityPlotUI>();
+    public event Action<CropType> AutoPlantRequested;
+    public event Action<AnimalType> AutoPlaceAnimalRequested;  // THÊM MỚI
+    public event Action<ProductType, int> SellProductRequested;
 
     private void Start()
     {
+        InitializeManagers();
+        ConnectEvents();
         SetupButtons();
-        messagePanel.SetActive(false);
+
+        if (messagePanel != null)
+            messagePanel.SetActive(false);
+
+        FakeButtonSetup();
+    }
+
+    private void FakeButtonSetup()
+    {
+        upgradeButton.onClick.Invoke();
+        inventoryButton.onClick.Invoke();
+    }
+
+    private void InitializeManagers()
+    {
+        var gameConfig = new GameConfig();
+
+        inventoryUIManager?.Initialize();
+        shopUIManager?.Initialize(gameConfig);
+        upgradeUIManager?.Initialize(gameConfig);
+        workerUIManager?.Initialize();
+    }
+
+    private void ConnectEvents()
+    {
+        // Connect shop manager events
+        if (shopUIManager != null)
+        {
+            shopUIManager.OnSeedPurchaseRequested += (cropType, amount) => BuySeedsRequested?.Invoke(cropType, amount);
+            shopUIManager.OnAnimalPurchaseRequested += (animalType) => BuyAnimalRequested?.Invoke(animalType);
+        }
+
+        // Connect upgrade manager events
+        if (upgradeUIManager != null)
+        {
+            upgradeUIManager.OnEquipmentUpgradeRequested += () => UpgradeEquipmentRequested?.Invoke();
+        }
+
+        // Connect inventory manager events (for selling)
+        if (inventoryUIManager != null)
+        {
+            inventoryUIManager.OnSellProductRequested += (productType, amount) => SellProductRequested?.Invoke(productType, amount);
+        }
+
+        if( workerUIManager != null)
+        {
+            workerUIManager.OnHireWorkerRequested += () => BuyWorkerRequested?.Invoke();
+        }
     }
 
     private void SetupButtons()
     {
+        // Main menu buttons
         newGameButton?.onClick.AddListener(() => NewGameRequested?.Invoke());
         continueGameButton?.onClick.AddListener(() => ContinueGameRequested?.Invoke());
-        buyWorkerButton?.onClick.AddListener(() => BuyWorkerRequested?.Invoke());
+
+        // Action buttons
         autoHarvestButton?.onClick.AddListener(() => AutoHarvestRequested?.Invoke());
         autoPlantTomatoButton?.onClick.AddListener(() => AutoPlantRequested?.Invoke(CropType.Tomato));
-        
-        buyTomatoSeedsButton?.onClick.AddListener(() => BuySeedsRequested?.Invoke(CropType.Tomato));
-        buyBlueberrySeedsButton?.onClick.AddListener(() => BuySeedsRequested?.Invoke(CropType.Blueberry));
+        autoPlantBlueberryButton?.onClick.AddListener(() => AutoPlantRequested?.Invoke(CropType.Blueberry));
+        autoPlantStrawberryButton?.onClick.AddListener(() => AutoPlantRequested?.Invoke(CropType.Strawberry));  // THÊM MỚI
+        autoPlaceCowButton?.onClick.AddListener(() => AutoPlaceAnimalRequested?.Invoke(AnimalType.Cow));        // THÊM MỚI
+
+        // Navigation buttons
+        inventoryButton?.onClick.AddListener(() =>
+        {
+            inventoryButton.GetComponent<Image>().color = _highlightedButtonColor;
+            workerButton.GetComponent<Image>().color = _defaultButtonColor;
+            inventoryUIManager?.Activate(true);
+            workerUIManager?.Activate(false);
+        });
+        shopButton?.onClick.AddListener(() =>
+        {
+            shopButton.GetComponent<Image>().color = _highlightedButtonColor;
+            upgradeButton.GetComponent<Image>().color = _defaultButtonColor;
+            shopUIManager?.Activate(true);
+            upgradeUIManager?.Activate(false);
+        });
+        upgradeButton?.onClick.AddListener(() =>
+        {
+            upgradeButton.GetComponent<Image>().color = _highlightedButtonColor;
+            shopButton.GetComponent<Image>().color = _defaultButtonColor;
+            upgradeUIManager?.Activate(true);
+            shopUIManager?.Activate(false);
+        });
+        workerButton?.onClick.AddListener(() =>
+        {
+            workerButton.GetComponent<Image>().color = _highlightedButtonColor;
+            inventoryButton.GetComponent<Image>().color = _defaultButtonColor;
+            workerUIManager?.Activate(true);
+            inventoryUIManager?.Activate(false);
+        });
+
+        expandPlotButton?.onClick.AddListener(() => BuyPlotRequested?.Invoke());
     }
 
     public void UpdateFarmData(Farm farm)
     {
-        UpdateResourceDisplay(farm);
-        UpdatePlots(farm);
+        UpdateBasicStats(farm);
+        UpdateInventory(farm);
+        UpdateWorkers(farm);
     }
 
-    private void UpdateResourceDisplay(Farm farm)
+    private void UpdateBasicStats(Farm farm)
     {
-        if (goldText) goldText.text = $"Gold: {farm.Gold}";
-        if (equipmentLevelText) equipmentLevelText.text = $"Equipment Level: {farm.EquipmentLevel}";
-        if (workersText) workersText.text = $"Workers: {farm.GetAvailableWorkers()}/{farm.GetTotalWorkers()}";
-        if (plotsText) plotsText.text = $"Plots: {farm.GetTotalPlots() - farm.GetEmptyPlots()}/{farm.GetTotalPlots()}";
+        if (goldText != null)
+            goldText.text = $"Gold: {farm.Gold}";
+
+        if (workersText != null)
+            workersText.text = $"Workers: {farm.GetAvailableWorkers()}/{farm.GetTotalWorkers()}";
     }
 
-    private void UpdatePlots(Farm farm)
+    private void UpdateInventory(Farm farm)
     {
-        // Clear existing
-        foreach (var plotUI in _plotUIs)
+        if (inventoryUIManager != null)
         {
-            if (plotUI != null) Destroy(plotUI.gameObject);
-        }
-        _plotUIs.Clear();
+            var seeds = new Dictionary<CropType, int>
+        {
+            { CropType.Tomato, farm.Inventory.GetSeedCount(CropType.Tomato) },
+            { CropType.Blueberry, farm.Inventory.GetSeedCount(CropType.Blueberry) },
+            { CropType.Strawberry, farm.Inventory.GetSeedCount(CropType.Strawberry) }
+        };
 
-        // Create new plot UIs
-        if (plotsContainer && plotUIPrefab)
+            var animals = new Dictionary<AnimalType, int>  // THÊM MỚI
         {
-            foreach (var plot in farm.Plots)
-            {
-                GameObject plotGO = Instantiate(plotUIPrefab, plotsContainer);
-                UnityPlotUI plotUI = plotGO.GetComponent<UnityPlotUI>();
-                if (plotUI != null)
-                {
-                    plotUI.Initialize(plot, this);
-                    _plotUIs.Add(plotUI);
-                }
-            }
+            { AnimalType.Cow, farm.Inventory.GetAnimalCount(AnimalType.Cow) }
+        };
+
+            var products = new Dictionary<ProductType, int>
+        {
+            { ProductType.Tomato, farm.Inventory.GetProductCount(ProductType.Tomato) },
+            { ProductType.Blueberry, farm.Inventory.GetProductCount(ProductType.Blueberry) },
+            { ProductType.Strawberry, farm.Inventory.GetProductCount(ProductType.Strawberry) },
+            { ProductType.Milk, farm.Inventory.GetProductCount(ProductType.Milk) }
+        };
+
+            // CẬP NHẬT CALL - thêm animals parameter
+            inventoryUIManager.UpdateInventory(seeds, products, animals);
         }
+    }
+    private void UpdateWorkers(Farm farm)
+    {
+        workerUIManager?.UpdateWorkers(farm.GetWorkers());
     }
 
     public void ShowMessage(string message)
     {
-        if (messageText) messageText.text = message;
-        if (messagePanel) 
+        if (messageText != null)
+            messageText.text = message;
+
+        if (messagePanel != null)
         {
             messagePanel.SetActive(true);
             Invoke(nameof(HideMessage), 3f);
+        }
+        else
+        {
+            Debug.Log($"[GAME MESSAGE] {message}");
         }
     }
 
     private void HideMessage()
     {
-        if (messagePanel) messagePanel.SetActive(false);
+        if (messagePanel != null)
+            messagePanel.SetActive(false);
     }
-
-    // Called by PlotUI
-    public void OnPlotPlantRequested(int plotId, CropType cropType)
-    {
-        PlantCropRequested?.Invoke(plotId, cropType);
-    }
-
-    public void OnPlotHarvestRequested(int plotId)
-    {
-        HarvestPlotRequested?.Invoke(plotId);
-    }
-
-    // Add more events as needed...
-    public event Action<CropType> AutoPlantRequested;
 }

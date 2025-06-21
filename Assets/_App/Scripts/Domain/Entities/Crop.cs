@@ -5,14 +5,26 @@ using UnityEngine;
 [Serializable]
 public abstract class Crop : IPlantable
 {
-    public abstract TimeSpan GrowthTime { get; }
-    public abstract int MaxHarvests { get; }
+    protected int growthTimeMinutes;
+    protected int maxHarvests;
+
+    public virtual TimeSpan GrowthTime => TimeSpan.FromMinutes(growthTimeMinutes);
+    public virtual int MaxHarvests => maxHarvests;
     public abstract ProductType ProductType { get; }
     public abstract string DisplayName { get; }
 
     public int CurrentHarvests { get; private set; }
     public DateTime PlantedTime { get; private set; }
     public DateTime LastHarvestTime { get; private set; }
+
+    public Crop(int growthTimeMinutes = 5, int maxHarvests = 10)
+    {
+        this.growthTimeMinutes = growthTimeMinutes;
+        this.maxHarvests = maxHarvests;
+        CurrentHarvests = 0;
+        PlantedTime = DateTime.MinValue;
+        LastHarvestTime = DateTime.MinValue;
+    }
 
     public virtual void Plant(DateTime plantTime)
     {
@@ -51,4 +63,19 @@ public abstract class Crop : IPlantable
 
     public int GetCurrentHarvests() => CurrentHarvests;
     public int GetMaxHarvests() => MaxHarvests;
+
+    public virtual void SetMaxHarvests(int maxHarvests)
+    {
+        this.maxHarvests = maxHarvests;
+    }
+
+    public virtual void SetGrowthTime(int growthTimeMinutes)
+    {
+        this.growthTimeMinutes = growthTimeMinutes;
+    }
+
+    public virtual int GetGrowthTimeMinutes()
+    {
+        return growthTimeMinutes;
+    }
 }
