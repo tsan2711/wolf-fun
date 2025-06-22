@@ -4,6 +4,8 @@ using UnityEngine.UI;
 using TMPro;
 using System;
 using DG.Tweening;
+using Cysharp.Threading.Tasks;
+using System.Linq;
 
 public class MainGameUI : MonoBehaviour, IGameUI
 {
@@ -18,8 +20,7 @@ public class MainGameUI : MonoBehaviour, IGameUI
     [SerializeField] private TextMeshProUGUI workersText;
 
     [Header("Action Buttons")]
-    [SerializeField] private Button newGameButton;
-    [SerializeField] private Button continueGameButton;
+
     [SerializeField] private Button autoHarvestButton;
     [SerializeField] private Button autoPlantTomatoButton;
     [SerializeField] private Button autoPlantBlueberryButton;
@@ -50,6 +51,19 @@ public class MainGameUI : MonoBehaviour, IGameUI
     [SerializeField] private float sidePanelAnimationDuration = 0.5f;
     [SerializeField] private float sidePanelOffset = 500f;
 
+    [Header("Settings")]
+    [SerializeField] private Button settingsButton;
+    [SerializeField] private GameObject settingsPanel;
+    [SerializeField] private Button newGameButton;
+    [SerializeField] private Button continueGameButton;
+
+    [Header("Time Configs")]
+    [SerializeField] private TextMeshProUGUI timeText;
+
+    [Header("Text Plot Section")]
+    [SerializeField] private TextMeshProUGUI availablePlotsText;
+    [SerializeField] private TextMeshProUGUI occupiedPlotsText;
+
     private Color _defaultButtonColor = Color.gray;
     private Color _highlightedButtonColor = new Color(0.8f, 0.8f, 0.2f);
 
@@ -73,8 +87,29 @@ public class MainGameUI : MonoBehaviour, IGameUI
     public event Action<CropType> AutoPlantRequested;
     public event Action<AnimalType> AutoPlaceAnimalRequested;
     public event Action<ProductType, int> SellProductRequested;
+    public event Action UIInitializeCompleted;
+    public event Action<int> OnHourPassed;
 
-    private void Start()
+    private float _timeUpdateInterval = 60f;
+    private int _lastHour = -1;
+
+    private void Start() => InitializeUI().Forget();
+
+    private void FixedUpdate()
+    {
+        if (timeText == null) return;
+        if (Time.time % _timeUpdateInterval >= 0.1f) return;
+
+        timeText.SetText(DateTime.Now.ToString("HH:mm"));
+
+        if (_lastHour == DateTime.Now.Hour) return;
+
+        _lastHour = DateTime.Now.Hour;
+        OnHourPassed?.Invoke(_lastHour);
+
+    }
+
+    private async UniTaskVoid InitializeUI()
     {
         SetupMessageSystem();
         InitializeSidePanels();
@@ -82,12 +117,17 @@ public class MainGameUI : MonoBehaviour, IGameUI
         ConnectEvents();
         SetupButtons();
         FakeButtonSetup();
+
+        await UniTask.NextFrame();
+
+        OnHourPassed?.Invoke(DateTime.Now.Hour);
+        UIInitializeCompleted?.Invoke();
     }
 
     private void SetupMessageSystem()
     {
         if (messageSystem != null) return;
-        messageSystem = FindAnyObjectByType<MessageSystem>();
+        messageSystem = MessageSystem.Instance;
     }
 
     private void InitializeSidePanels()
@@ -146,7 +186,8 @@ public class MainGameUI : MonoBehaviour, IGameUI
         // Animate panel movement
         leftSidePanel.DOAnchorPos(targetPosition, sidePanelAnimationDuration)
                      .SetEase(Ease.OutQuart)
-                     .OnComplete(() => {
+                     .OnComplete(() =>
+                     {
                          isLeftAnimating = false;
                          Debug.Log($"Left panel {(isLeftPanelOpen ? "opened" : "closed")}");
                      });
@@ -180,7 +221,8 @@ public class MainGameUI : MonoBehaviour, IGameUI
         // Animate panel movement
         rightSidePanel.DOAnchorPos(targetPosition, sidePanelAnimationDuration)
                       .SetEase(Ease.OutQuart)
-                      .OnComplete(() => {
+                      .OnComplete(() =>
+                      {
                           isRightAnimating = false;
                           Debug.Log($"Right panel {(isRightPanelOpen ? "opened" : "closed")}");
                       });
@@ -196,7 +238,7 @@ public class MainGameUI : MonoBehaviour, IGameUI
     {
         // Rotate button to indicate state (arrow direction)
         float targetRotation = isPanelOpen ? 0f : 0f;
-        
+
         toggleButton.transform.DORotate(new Vector3(0, 0, targetRotation), sidePanelAnimationDuration * 0.5f)
                     .SetEase(Ease.OutQuart);
 
@@ -281,11 +323,14 @@ public class MainGameUI : MonoBehaviour, IGameUI
         }
     }
 
+
+
     private void SetupButtons()
     {
         // Main menu buttons
+        SetupButtonWithClickAnimation(settingsButton, () => settingsPanel.SetActive(true));
         SetupButtonWithClickAnimation(newGameButton, () => NewGameRequested?.Invoke());
-        SetupButtonWithClickAnimation(continueGameButton, () => ContinueGameRequested?.Invoke());
+        SetupButtonWithClickAnimation(continueGameButton, () => settingsPanel.SetActive(false));
 
         // Action buttons
         SetupButtonWithClickAnimation(autoHarvestButton, () => AutoHarvestRequested?.Invoke());
@@ -432,12 +477,27 @@ public class MainGameUI : MonoBehaviour, IGameUI
         }
     }
 
+    public void UpdateWorkerState()
+    {
+        var farm = GameController.Instance?.Farm;
+        if (farm == null) return;
+
+        UpdateWorkersUI(farm);
+        UpdateWorkers(farm);
+    }
+
     public void UpdateFarmData(Farm farm)
     {
         UpdateBasicStats(farm);
         UpdateInventory(farm);
         UpdateWorkers(farm);
         UpdateUpgradeUI(farm);
+    }
+
+    private void UpdateWorkersUI(Farm farm)
+    {
+        if (workersText != null)
+            workersText.text = $"Workers: {farm.GetAvailableWorkers()}/{farm.GetTotalWorkers()}";
     }
 
     private void UpdateUpgradeUI(Farm farm)
@@ -462,11 +522,31 @@ public class MainGameUI : MonoBehaviour, IGameUI
 
     private void UpdateBasicStats(Farm farm)
     {
+
+        Debug.Log("Updating basic stats for farm... + workers: " + farm.GetAvailableWorkers() + "/" + farm.GetTotalWorkers());
+
         if (goldText != null)
             goldText.text = $"Gold: {farm.Gold}";
 
         if (workersText != null)
             workersText.text = $"Workers: {farm.GetAvailableWorkers()}/{farm.GetTotalWorkers()}";
+
+        UpdatePlotInformation(farm);
+    }
+
+    private void UpdatePlotInformation(Farm farm)
+    {
+        if (farm?.Plots == null) return;
+
+        var totalPlots = farm.Plots.Count;
+        var emptyPlots = farm.Plots.Count(p => p.Content == null);
+        var occupiedPlots = totalPlots - emptyPlots;
+
+        if (availablePlotsText != null)
+            availablePlotsText.text = $"Available: {emptyPlots}/{totalPlots}";
+
+        if (occupiedPlotsText != null)
+            occupiedPlotsText.text = $"Occupied: {occupiedPlots}/{totalPlots}";
     }
 
     private void UpdateInventory(Farm farm)
@@ -516,4 +596,58 @@ public class MainGameUI : MonoBehaviour, IGameUI
         leftSideToggleButton?.transform.DOKill();
         rightSideToggleButton?.transform.DOKill();
     }
+
+
+
+
+    #region Unit Test
+    [ContextMenu("Debug - Show Farm Info")]
+    private void DebugShowFarmInfo()
+    {
+        var gameController = GameController.Instance;
+        if (gameController?.Farm == null) return;
+
+        var farm = gameController.Farm;
+        Debug.Log($"FARM INFO:\n" +
+                 $"Gold: {farm.Gold}\n" +
+                 $"Workers: {farm.GetTotalWorkers()} (Available: {farm.GetAvailableWorkers()})\n" +
+                 $"Plots: {farm.GetTotalPlots()} (Empty: {farm.GetEmptyPlots()}, Ready: {farm.GetReadyToHarvestPlots()})\n" +
+                 $"Inventory: T:{farm.Inventory.GetSeedCount(CropType.Tomato)}, B:{farm.Inventory.GetSeedCount(CropType.Blueberry)}, S:{farm.Inventory.GetSeedCount(CropType.Strawberry)}");
+    }
+
+    [ContextMenu("Debug - Test All Time Periods")]
+    private void DebugTestAllTimePeriods()
+    {
+        var dayNightSystem = GameController.Instance?.DayNightSystem;
+        if (dayNightSystem == null) return;
+
+        Debug.Log("Testing all time periods...");
+
+        // Test key hours
+        int[] testHours = { 6, 10, 12, 15, 18, 22, 0, 3 };
+        foreach (int hour in testHours)
+        {
+            dayNightSystem.HandleHourUpdate(hour);
+            Debug.Log($"Hour {hour}: OK");
+        }
+    }
+
+    [ContextMenu("Debug - Buy Everything")]
+    private void DebugBuyEverything()
+    {
+        BuySeedsRequested?.Invoke(CropType.Tomato, 5);
+        BuySeedsRequested?.Invoke(CropType.Blueberry, 5);
+        BuySeedsRequested?.Invoke(CropType.Strawberry, 5);
+
+        BuyAnimalRequested?.Invoke(AnimalType.Cow);
+
+        BuyWorkerRequested?.Invoke();
+        BuyPlotRequested?.Invoke();
+
+        Debug.Log("Buy everything triggered");
+    }
+
+
+
+    #endregion
 }

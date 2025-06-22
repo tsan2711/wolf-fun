@@ -4,7 +4,7 @@ using TMPro;
 using DG.Tweening;
 using UnityEngine.UI;
 
-public class MessageSystem : MonoBehaviour
+public class MessageSystem : Singleton<MessageSystem>
 {
     [Header("UI References")]
     [SerializeField] private TextMeshProUGUI messageText;
@@ -44,8 +44,9 @@ public class MessageSystem : MonoBehaviour
     private Vector3 _originalPosition;
     private bool _canDismiss = false;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
         if (canvasGroup == null && messagePanel != null)
         {
             canvasGroup = messagePanel.GetComponent<CanvasGroup>();

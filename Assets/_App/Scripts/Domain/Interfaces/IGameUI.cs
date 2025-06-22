@@ -5,6 +5,7 @@ public interface IGameUI
     // Data updates (from GameController)
     void UpdateFarmData(Farm farm);
     void ShowMessage(string message);
+    void UpdateWorkerState();
 
     // Input events (to GameController)
     event Action NewGameRequested;
@@ -18,4 +19,7 @@ public interface IGameUI
     event Action<CropType> AutoPlantRequested;
     event Action<AnimalType> AutoPlaceAnimalRequested;  // New event for auto placing animals
     event Action<ProductType, int> SellProductRequested;
+    public event Action UIInitializeCompleted;
+    public event Action<int> OnHourPassed;
+
 }

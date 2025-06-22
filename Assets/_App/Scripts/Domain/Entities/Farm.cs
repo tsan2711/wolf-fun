@@ -9,6 +9,7 @@ using UnityEditor.Rendering.Universal;
 public class Farm
 {
     public int Gold { get; private set; } = 50000;
+    public int MaxPlot { get; private set; } = 64;
 
     public List<Plot> Plots { get; private set; } = new List<Plot>();
     public List<int> WorkerIds { get; private set; } = new List<int>();
@@ -202,11 +203,14 @@ public class Farm
     }
 
     public Plot GetPlot(int id) => Plots.FirstOrDefault(p => p.Id == id);
+    public bool CanExpandPlot() => Plots.Count < MaxPlot;
+
 
     // Worker management
     public void RegisterWorker(Worker worker)
     {
         Debug.Log($"Registering worker {worker.Id} to farm");
+        Debug.Log("_workers.Contains(worker): " + _workers.Contains(worker));
         if (!_workers.Contains(worker))
         {
             _workers.Add(worker);

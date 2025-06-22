@@ -17,6 +17,7 @@ public class WorkingState : BaseState
     public override void OnEnter()
     {
         base.OnEnter();
+
         workDuration = worker.WorkDuration;
         workTimer = 0f;
 

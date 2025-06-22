@@ -384,4 +384,33 @@ public class FarmManager : MonoBehaviour
     //     // Kiểm tra xem có đủ tiền để mở rộng farm không
     //     return  >= farm.GetExpansionCost();
     // }
+
+
+    public void CleanupForNewGame()
+    {
+        Debug.Log("FarmManager: Cleaning up for new game");
+
+        if (farm != null)
+        {
+            farm.FarmStateChanged -= OnFarmStateChanged;
+        }
+
+        foreach (var contentGO in contentGameObjects.Values)
+        {
+            if (contentGO != null)
+                DestroyImmediate(contentGO);
+        }
+        contentGameObjects.Clear();
+
+        foreach (var plotGO in plotGameObjects.Values)
+        {
+            if (plotGO != null)
+                DestroyImmediate(plotGO);
+        }
+        plotGameObjects.Clear();
+
+        farm = null;
+
+        Debug.Log("FarmManager cleanup complete");
+    }
 }

@@ -55,8 +55,7 @@ public class Worker : MonoBehaviour
         _transform = transform;
         _navMeshAgent = GetComponent<NavMeshAgent>();
 
-        // Find FarmManager
-        _farmManager = FindAnyObjectByType<FarmManager>();
+        _farmManager = GameController.Instance?.FarmLayoutManager;
 
         SetUpStateMachine();
         SetUpLoadingBar();
@@ -76,7 +75,7 @@ public class Worker : MonoBehaviour
                 CompleteTask();
             }
         }
-        Debug.Log($"Worker {Id} - Current State: {GetCurrentState()}");
+        // Debug.Log($"Worker {Id} - Current State: {GetCurrentState()}");
     }
 
     private void SetUpLoadingBar()
@@ -127,14 +126,14 @@ public class Worker : MonoBehaviour
         // Condition functions
         // Func<bool> HasTaskAndNotAtTarget() => () => CurrentTask != null && TargetPlot != null && !IsAtTargetPosition() && !IsNightTimeCheck();
         // Func<bool> HasTaskAndAtTarget() => () => CurrentTask != null && TargetPlot != null && IsAtTargetPosition() && !IsNightTimeCheck();
-       Func<bool> HasTaskAndNotAtTarget() => () => CurrentTask != null && TargetPlot != null && !IsAtTargetPosition();
+        Func<bool> HasTaskAndNotAtTarget() => () => CurrentTask != null && TargetPlot != null && !IsAtTargetPosition();
         Func<bool> HasTaskAndAtTarget() => () => CurrentTask != null && TargetPlot != null && IsAtTargetPosition();
-       
+
         Func<bool> IsAtTarget() => () => IsAtTargetPosition();
         Func<bool> HasNoTask() => () => CurrentTask == null || IsNightTimeCheck();
 
         bool IsNightTimeCheck()
-        { 
+        {
             return false;
             int hour = DateTime.Now.Hour;
             return hour >= 22 || hour <= 6;
@@ -178,8 +177,8 @@ public class Worker : MonoBehaviour
             return false;
         }
 
-        var gameController = FindAnyObjectByType<GameController>();
-        var farm = gameController?.Farm;
+
+        var farm = GameController.Instance?.Farm;
 
         if (farm == null)
         {
@@ -207,7 +206,7 @@ public class Worker : MonoBehaviour
         // Release plot reservation
         if (TargetPlot != null)
         {
-            var farm = FindAnyObjectByType<GameController>()?.Farm;
+            var farm = GameController.Instance?.Farm;
             farm?.ReleasePlot(TargetPlot.Id, Id);
             Debug.Log($"Worker {Id} released plot {TargetPlot.Id}");
         }
@@ -227,7 +226,7 @@ public class Worker : MonoBehaviour
     {
         if (TargetPlot != null)
         {
-            var farm = FindAnyObjectByType<GameController>()?.Farm;
+            var farm = GameController.Instance?.Farm;
             farm?.ReleasePlot(TargetPlot.Id, Id);
             Debug.Log($"Worker {Id} cleared task and released plot {TargetPlot.Id}");
         }
@@ -319,12 +318,6 @@ public class Worker : MonoBehaviour
         StateChanged?.Invoke(this, state);
     }
 
-    private float GetDistanceToTarget()
-    {
-        if (TargetPlot == null) return float.MaxValue;
-        return Vector3.Distance(Position, GetPlotPosition(TargetPlot));
-    }
-
     public void SetAnimationState(int animationState)
     {
         if (_animator == null)
@@ -334,4 +327,56 @@ public class Worker : MonoBehaviour
         }
         _animator.SetInteger("State", animationState);
     }
+
+
+    #region Unit Test
+
+    [ContextMenu("Force Idle State")]
+    private void ForceIdle()
+    {
+        ClearCurrentTask();
+        if (stateMachine != null)
+        {
+            stateMachine.SetState(idle);
+        }
+        Debug.Log($"Worker {Id} forced to Idle state");
+    }
+
+    [ContextMenu("/Force Complete Current Task")]
+    private void ForceCompleteTask()
+    {
+        if (CurrentTask != null)
+        {
+            CompleteTask();
+            Debug.Log($"Worker {Id} task completed via debug");
+        }
+        else
+        {
+            Debug.Log($"Worker {Id} has no task to complete");
+        }
+    }
+
+
+    [ContextMenu("Print Current State")]
+    private void PrintCurrentState()
+    {
+        var state = GetCurrentState();
+        var hasTask = CurrentTask != null;
+        var targetPlot = TargetPlot?.Id ?? -1;
+        var isAtTarget = IsAtTargetPosition();
+        var isAvailable = IsAvailable;
+
+        Debug.Log($"=== Worker {Id} Debug Info ===\n" +
+                 $"State: {state}\n" +
+                 $"Has Task: {hasTask}\n" +
+                 $"Target Plot: {targetPlot}\n" +
+                 $"At Target: {isAtTarget}\n" +
+                 $"Available: {isAvailable}\n" +
+                 $"Position: {Position}\n" +
+                 $"Is Moving: {IsMoving()}");
+    }
+
+
+    #endregion
+
 }

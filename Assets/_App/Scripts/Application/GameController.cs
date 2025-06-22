@@ -4,8 +4,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.AI;
+using Cysharp.Threading.Tasks;
+using System.Threading;
+using System.Threading.Tasks;
 
-public class GameController : MonoBehaviour
+public class GameController : Singleton<GameController>
 {
     [Header("Worker Config")]
     [SerializeField] private GameObject workerPrefab;
@@ -17,6 +20,10 @@ public class GameController : MonoBehaviour
 
     [Header("3D Farm Layout")]
     [SerializeField] private FarmManager farmLayoutManager;
+    public FarmManager FarmLayoutManager => farmLayoutManager;
+    [Header("Day Night Settings")]
+    [SerializeField] private DayNightSystem dayNightSystem;
+    public DayNightSystem DayNightSystem => dayNightSystem;
 
     private Farm _farm;
     private GameConfig _config;
@@ -24,13 +31,16 @@ public class GameController : MonoBehaviour
     private List<Worker> _workerGameObjects = new List<Worker>();
     public event Action<Farm> FarmStateChanged;
     public event Action<string> MessageDisplayed;
+    private CancellationTokenSource _gameLoopCancellation;
+
 
     public Farm Farm => _farm;
 
     private IGameUI _gameUI;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
         DontDestroyOnLoad(gameObject);
         _config = new GameConfig();
 
@@ -91,22 +101,29 @@ public class GameController : MonoBehaviour
         _gameUI.AutoPlantRequested += (cropType) => AutoPlantAll(cropType);
         _gameUI.AutoPlaceAnimalRequested += (animalType) => AutoPlaceAnimalAll(animalType); // THÊM MỚI
         _gameUI.SellProductRequested += (productType, amount) => SellProduct(productType, amount);
+        _gameUI.UIInitializeCompleted += OnFarmStateChanged; // Ensure UI is ready
+        _gameUI.OnHourPassed += HandleHourPassed;
     }
 
 
     public void StartNewGame()
     {
+        CleanupCurrentGame();
+
         _farm = new Farm();
         _farm.FarmStateChanged += OnFarmStateChanged;
 
         // Create initial worker GameObjects
-        CreateWorkerGameObjects();
 
         InitializeFarm();
 
         StartGameLoop();
+
+        CreateWorkerGameObjects();
+
         OnFarmStateChanged(); // Update UI
     }
+
 
     public void LoadGame()
     {
@@ -123,7 +140,7 @@ public class GameController : MonoBehaviour
 
             CreateWorkerGameObjects();
             StartGameLoop();
-            OnFarmStateChanged(); // Update UI
+            OnFarmStateChanged();
         }
         else
         {
@@ -403,6 +420,11 @@ public class GameController : MonoBehaviour
 
     public bool BuyPlot()
     {
+        if (!_farm.CanExpandPlot())
+        {
+            ShowMessage("Cannot expand farm, max plots reached!");
+            return false;
+        }
         if (_farm.BuyPlot())
         {
             ShowMessage("Bought new plot for 500 gold!");
@@ -421,6 +443,7 @@ public class GameController : MonoBehaviour
             int newWorkerId = _farm.WorkerIds.Last();
             CreateWorkerGameObject(newWorkerId);
 
+            OnFarmStateChanged();
             ShowMessage("Hired new worker for 500 gold!");
             return true;
         }
@@ -608,37 +631,57 @@ public class GameController : MonoBehaviour
 
     private void StartGameLoop()
     {
-        if (_gameLoopCoroutine != null)
-            StopCoroutine(_gameLoopCoroutine);
+        StopGameLoop();
+        _gameLoopCancellation = new CancellationTokenSource();
+        var token = _gameLoopCancellation.Token;
 
-        _gameLoopCoroutine = StartCoroutine(GameLoop());
+        AutoAssignTaskAsync(token).Forget();
+        AutoSaveGameAsync(token).Forget();
+        AutoCheckWinConditionAsync(token).Forget();
     }
 
-    private IEnumerator GameLoop()
+    private async UniTaskVoid AutoCheckWinConditionAsync(CancellationToken token)
     {
-        while (true)
+        while (!token.IsCancellationRequested)
         {
-            // Auto-assign tasks every 5 seconds
-            if (Time.time % 5f < 1f)
-            {
-                AutoAssignTasks();
-            }
-
-            // Auto-save every minute
-            if (Time.time % 60f < 1f)
-            {
-                SaveGame();
-            }
-
-            // Check win condition
             if (_farm.Gold >= 1000000)
             {
                 ShowMessage("Congratulations! You've reached 1 million gold!");
-                // Handle win condition
+                // Handle win condition, e.g. show UI, stop game loop, etc.
+                _gameLoopCancellation.Cancel();
+                StopGameLoop();
+                return;
             }
-
-            yield return new WaitForSeconds(1f);
+            await UniTask.Delay(1000, cancellationToken: token);
         }
+    }
+
+
+    private async UniTaskVoid AutoAssignTaskAsync(CancellationToken token)
+    {
+        while (!token.IsCancellationRequested)
+        {
+            await UniTask.Delay(5000, cancellationToken: token);
+            AutoAssignTasks();
+        }
+    }
+
+    private async UniTaskVoid AutoSaveGameAsync(CancellationToken token)
+    {
+        while (!token.IsCancellationRequested)
+        {
+            await UniTask.Delay(60000, cancellationToken: token);
+            SaveGame();
+        }
+    }
+
+
+    private void StopGameLoop()
+    {
+        if (_gameLoopCancellation == null) return;
+        _gameLoopCancellation?.Cancel();
+        _gameLoopCancellation?.Dispose();
+        _gameLoopCancellation = null;
     }
 
     private void CalculateOfflineProgress(TimeSpan offlineTime)
@@ -682,7 +725,7 @@ public class GameController : MonoBehaviour
 
     private void OnWorkerStateChanged(Worker worker, WorkerState newState)
     {
-        Debug.Log($"Worker {worker.Id} changed to {newState} state");
+        _gameUI?.UpdateWorkerState();
     }
 
     // Factory methods
@@ -737,6 +780,91 @@ public class GameController : MonoBehaviour
         FarmStateChanged?.Invoke(_farm);
     }
 
+    private void HandleHourPassed(int hour) => dayNightSystem?.HandleHourUpdate(hour);
+
+
+    #region Cleanup Methods
+
+    private void CleanupCurrentGame()
+    {
+        Debug.Log("=== Starting New Game Cleanup ===");
+
+        StopGameLoop();
+
+        CleanupWorkers();
+
+        CleanupFarmVisuals();
+
+        CleanupFarmData();
+
+        ClearGameSaveData();
+
+        Debug.Log("=== New Game Cleanup Complete ===");
+    }
+
+    private void ClearGameSaveData()
+    {
+        PlayerPrefs.SetInt("ContinueGame", 0);
+
+        PlayerPrefs.Save();
+        Debug.Log("Game save data cleared");
+    }
+
+    private void CleanupFarmData()
+    {
+        if (_farm != null)
+        {
+            Debug.Log("Cleaning up old farm data");
+
+            // Unsubscribe from farm events
+            _farm.FarmStateChanged -= OnFarmStateChanged;
+            _farm.GoldChanged -= null; // Clear any other subscriptions
+
+            // Clear any farm-specific data
+            _farm = null;
+        }
+    }
+
+    private void CleanupFarmVisuals()
+    {
+        if (farmLayoutManager != null)
+        {
+            // Let FarmManager handle its own cleanup
+            farmLayoutManager.CleanupForNewGame();
+        }
+    }
+
+    private void CleanupWorkers()
+    {
+        Debug.Log($"Cleaning up {_workerGameObjects.Count} workers");
+
+        foreach (var worker in _workerGameObjects)
+        {
+            if (worker != null)
+            {
+                // Unsubscribe from events to prevent memory leaks
+                worker.TaskCompleted -= OnWorkerTaskCompleted;
+                worker.StateChanged -= OnWorkerStateChanged;
+                worker.TaskStateChanged -= null; // Clear any lambda subscriptions
+
+                // Destroy GameObject
+                if (worker.gameObject != null)
+                {
+                    Destroy(worker.gameObject);
+                }
+            }
+        }
+
+        _workerGameObjects.Clear();
+        Debug.Log("Worker cleanup complete");
+    }
+
+
+
+
+
+    #endregion
+
     private void ShowMessage(string message)
     {
         // Update UI through abstraction
@@ -762,8 +890,11 @@ public class GameController : MonoBehaviour
         if (!hasFocus) SaveGame();
     }
 
-    private void OnDestroy()
+
+
+    protected override void OnDestroy()
     {
+        base.OnDestroy();
         // Clean up worker events
         foreach (var worker in _workerGameObjects)
         {
@@ -774,4 +905,96 @@ public class GameController : MonoBehaviour
             }
         }
     }
+
+
+    #region Unit Test
+
+    [ContextMenu("Add 100k Gold")]
+    private void Add100kGold()
+    {
+        if (Farm == null) return;
+
+        Farm.AddGold(100000);
+    }
+
+    [ContextMenu("Add 1M Gold")]
+    private void Add1MGold()
+    {
+        if (Farm == null) return;
+
+        Farm.AddGold(1000000);
+    }
+
+    [ContextMenu("Add Full Inventory")]
+    private void AddFullInventory()
+    {
+        if (Farm == null) return;
+        if (Farm.Inventory == null) return;
+
+        var inventory = Farm.Inventory;
+        inventory.AddSeeds(CropType.Tomato, 50);
+        inventory.AddSeeds(CropType.Blueberry, 50);
+        inventory.AddSeeds(CropType.Strawberry, 50);
+        inventory.AddAnimals(AnimalType.Cow, 10);
+        inventory.AddProduct(ProductType.Tomato, 100);
+        inventory.AddProduct(ProductType.Blueberry, 100);
+        inventory.AddProduct(ProductType.Strawberry, 100);
+        inventory.AddProduct(ProductType.Milk, 100);
+
+        Debug.Log("📦 Filled inventory with items");
+    }
+
+
+    [ContextMenu("Plant All Crop Types")]
+    private void PlantAllCropTypes()
+    {
+        if (Farm?.Inventory == null) return;
+
+        // Add seeds first
+        Farm.Inventory.AddSeeds(CropType.Tomato, 5);
+        Farm.Inventory.AddSeeds(CropType.Blueberry, 5);
+        Farm.Inventory.AddSeeds(CropType.Strawberry, 5);
+
+        // Auto plant all
+        AutoPlantAll(CropType.Tomato);
+        AutoPlantAll(CropType.Blueberry);
+        AutoPlantAll(CropType.Strawberry);
+
+        Debug.Log("Planted all crop types for testing");
+    }
+
+    [ContextMenu("Add 3 Workers")]
+    private void Add3Workers()
+    {
+        Farm.AddGold(2000); // Enough for 3 workers (500 each)
+
+        for (int i = 0; i < 3; i++)
+        {
+            BuyWorker();
+        }
+
+        Debug.Log($"Added workers. Total: {Farm.GetTotalWorkers()}");
+    }
+    [ContextMenu("Expand Farm")]
+    private void TestExpandFarm()
+    {
+        Farm.AddGold(5000);
+
+        int initialPlots = Farm.GetTotalPlots();
+
+        // Buy 10 new plots
+        for (int i = 0; i < 10; i++)
+        {
+            BuyPlot();
+        }
+
+        int newPlots = Farm.GetTotalPlots() - initialPlots;
+        Debug.Log($"🏡 Expanded farm by {newPlots} plots. Total: {Farm.GetTotalPlots()}");
+    }
+
+
+
+    #endregion
+
+
 }

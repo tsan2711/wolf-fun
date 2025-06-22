@@ -1,4 +1,5 @@
 using System.Collections;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -36,6 +37,7 @@ public class SceneController : Singleton<SceneController>
     {
         if (IsLoading) return;
         StartCoroutine(LoadCoroutine(sceneName));
+
     }
 
     private IEnumerator LoadCoroutine(string sceneName)
