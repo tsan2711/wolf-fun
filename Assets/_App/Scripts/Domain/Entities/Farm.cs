@@ -10,6 +10,17 @@ public class Farm
 {
     public int Gold { get; private set; } = 50000;
     public int MaxPlot { get; private set; } = 64;
+    public int MaxWorker { get; private set; } = 10;
+
+    public const string TOMATOSEED = "TomatoSeed";
+    public const string TOMATOMATURE = "TomatoMature";
+    public const string BLUEBERRYSEED = "BlueberrySeed";
+    public const string BLUEBERRYMATURE = "BlueberryMature";
+    public const string STRAWBERRYSEED = "StrawberrySeed";
+    public const string STRAWBERRYMATURE = "StrawberryMature";
+    public const string COW = "Cow";
+    public const string COWMATURE = "CowMature";
+
 
     public List<Plot> Plots { get; private set; } = new List<Plot>();
     public List<int> WorkerIds { get; private set; } = new List<int>();
@@ -21,6 +32,8 @@ public class Farm
 
     public event Action<int> GoldChanged;
     public event Action FarmStateChanged;
+
+    public event Action<Plot> PlotStateChanged;
 
     [NonSerialized]
     private Dictionary<int, int> _plotReservations = new Dictionary<int, int>();
@@ -190,6 +203,12 @@ public class Farm
         return zoneCounts.OrderBy(kvp => kvp.Value).First().Key;
     }
 
+    public void OnPlotStateChange(Plot plot)
+    { 
+        // Notify listeners about the plot state change
+        PlotStateChanged?.Invoke(plot);
+    }
+
     public bool ReservePlot(int plotId, int workerId)
     {
         if (_plotReservations.ContainsKey(plotId))
@@ -203,7 +222,7 @@ public class Farm
     }
 
     public Plot GetPlot(int id) => Plots.FirstOrDefault(p => p.Id == id);
-    public bool CanExpandPlot() => Plots.Count < MaxPlot;
+    public bool DoesReachMaxPlots() => Plots.Count < MaxPlot;
 
 
     // Worker management
@@ -217,12 +236,15 @@ public class Farm
         }
     }
 
+    public bool DoesReachMaxWorkers()
+    {
+        return _workers.Count < MaxWorker;
+    }
+
     public bool IsPlotReserved(int plotId)
     {
         return _plotReservations.ContainsKey(plotId);
     }
-
-
 
     public bool BuyPlotForZone(PlotZone zone)
     {
@@ -263,6 +285,7 @@ public class Farm
         return _upgradeLevels.TryGetValue(productType, out int level) ? level : 1;
     }
 
+
     // Get plots for work
 
     public Worker GetBestAvailableWorker() => _workers.FirstOrDefault(w => w.IsAvailable);
@@ -274,7 +297,7 @@ public class Farm
 
         // Only include plots that are ready to harvest AND not reserved by other workers
         foreach (var plot in GetPlotsReadyToHarvest())
-        {
+        {   
             if (!IsPlotReserved(plot.Id))
             {
                 tasks.Add(new SimpleTask

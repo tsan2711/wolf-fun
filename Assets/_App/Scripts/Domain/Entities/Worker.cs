@@ -204,15 +204,19 @@ public class Worker : MonoBehaviour
     public void CompleteTask()
     {
         // Release plot reservation
+        var farm = GameController.Instance?.Farm;
         if (TargetPlot != null)
         {
-            var farm = GameController.Instance?.Farm;
             farm?.ReleasePlot(TargetPlot.Id, Id);
             Debug.Log($"Worker {Id} released plot {TargetPlot.Id}");
         }
 
+
         CurrentTask?.Execute();
         TaskCompleted?.Invoke(this);
+
+        farm?.OnPlotStateChange(TargetPlot);
+
         CurrentTask = null;
         TargetPlot = null;
 

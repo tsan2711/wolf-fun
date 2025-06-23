@@ -171,9 +171,9 @@ public class GameController : Singleton<GameController>
         GameObject workerGO = Instantiate(workerPrefab, farmContainer);
         Vector3 scale = farmContainer.localScale;
         workerGO.transform.localScale = new Vector3(
-            1f / scale.x,
-            1f / scale.y,
-            1f / scale.z
+            2f / scale.x,
+            2f / scale.y,
+            2f / scale.z
         );
 
         Worker worker = workerGO.GetComponent<Worker>();
@@ -198,8 +198,7 @@ public class GameController : Singleton<GameController>
 
 
         // Subscribe to events
-        worker.TaskCompleted += OnWorkerTaskCompleted;
-        worker.StateChanged += OnWorkerStateChanged;
+
 
         // Simple spawn: use farmContainer position (already on NavMesh)
         Vector3 spawnPosition = farmContainer.position + Vector3.right * workerId * 2f;
@@ -222,7 +221,8 @@ public class GameController : Singleton<GameController>
         fillBar.transform.localPosition = fillBarOffset; // Remove += operator
         fillBar.Deactivate(); // Start deactivated
 
-        // Subscribe to TaskStateChanged for progress updates
+        worker.StateChanged += OnWorkerStateChanged;
+
         worker.TaskStateChanged += (progress) =>
         {
             if (!fillBar.gameObject.activeInHierarchy)
@@ -237,6 +237,7 @@ public class GameController : Singleton<GameController>
         {
             fillBar.ResetProgress();
             fillBar.Deactivate();
+            OnWorkerTaskCompleted(w);
         };
 
         // Subscribe to StateChanged for state-based activation
@@ -420,7 +421,7 @@ public class GameController : Singleton<GameController>
 
     public bool BuyPlot()
     {
-        if (!_farm.CanExpandPlot())
+        if (!_farm.DoesReachMaxPlots())
         {
             ShowMessage("Cannot expand farm, max plots reached!");
             return false;
@@ -437,6 +438,12 @@ public class GameController : Singleton<GameController>
 
     public bool BuyWorker()
     {
+        if (!_farm.DoesReachMaxWorkers())
+        {
+            ShowMessage("Cannot hire more workers, max workers reached!");
+            return false;
+        }
+
         if (_farm.BuyWorker())
         {
             // Create the new worker GameObject
@@ -447,6 +454,7 @@ public class GameController : Singleton<GameController>
             ShowMessage("Hired new worker for 500 gold!");
             return true;
         }
+
 
         ShowMessage("Not enough gold!");
         return false;

@@ -22162,10 +22162,6 @@ MonoBehaviour:
   emptyPlotMaterial: {fileID: 2100000, guid: 5890026f428c84d739773804875d1b61, type: 2}
   growingPlotMaterial: {fileID: 2100000, guid: d17c6b5b5a8e248a0a8f3af122ec33bd, type: 2}
   readyPlotMaterial: {fileID: 2100000, guid: 8ad7c5ec7e2de496d8d51b1bfbadded7, type: 2}
-  tomatoPrefab: {fileID: 3622680879704316862, guid: 7b348048a6261417ba2fcf950f01026e, type: 3}
-  blueberryPrefab: {fileID: 6066698466481302231, guid: 2df64d29604ab435ba94a58e64e291a0, type: 3}
-  strawberryPrefab: {fileID: 5103870786166027563, guid: 561acf8d503fe4af292c26e5b04e8272, type: 3}
-  cowPrefab: {fileID: 5040489659287107537, guid: 51ec58ea3312345ea869b85987e546a2, type: 3}
   strawberryZoneMaterial: {fileID: 2100000, guid: 7747905ea6ecb419aa370be6b0708a35, type: 2}
   tomatoZoneMaterial: {fileID: 2100000, guid: c64aa65f008fd423e97d2ad1ef18b0c9, type: 2}
   blueberryZoneMaterial: {fileID: 2100000, guid: 1e282572cf7e4463f8126320e583afcb, type: 2}
@@ -54956,7 +54952,6 @@ Transform:
   - {fileID: 1163469331}
   - {fileID: 751526332}
   - {fileID: 1526214419}
-  - {fileID: 2098090845}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1758219824
@@ -55945,6 +55940,75 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1776930558}
   m_CullTransparentMesh: 1
+--- !u!1 &1777984538
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1777984540}
+  - component: {fileID: 1777984539}
+  m_Layer: 0
+  m_Name: ObjectPooler
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1777984539
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1777984538}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5ad84c8768f44ea9ab388ef67379f5f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  pools:
+  - tag: TomatoSeed
+    prefab: {fileID: 3622680879704316862, guid: 7b348048a6261417ba2fcf950f01026e, type: 3}
+    initialSize: 15
+  - tag: TomatoMature
+    prefab: {fileID: 3622680879704316862, guid: 21153ec00c6e549788f24815f983f53a, type: 3}
+    initialSize: 15
+  - tag: BlueberrySeed
+    prefab: {fileID: 6066698466481302231, guid: 2df64d29604ab435ba94a58e64e291a0, type: 3}
+    initialSize: 15
+  - tag: BlueberryMature
+    prefab: {fileID: 6066698466481302231, guid: 5a8831647f7a8460998f8e547b708ef4, type: 3}
+    initialSize: 15
+  - tag: StrawberrySeed
+    prefab: {fileID: 5103870786166027563, guid: 561acf8d503fe4af292c26e5b04e8272, type: 3}
+    initialSize: 15
+  - tag: StrawberryMature
+    prefab: {fileID: 5103870786166027563, guid: 987725d5f28fa4cb6b2f32b310556759, type: 3}
+    initialSize: 15
+  - tag: Cow
+    prefab: {fileID: 5040489659287107537, guid: 51ec58ea3312345ea869b85987e546a2, type: 3}
+    initialSize: 15
+  - tag: CowMature
+    prefab: {fileID: 5040489659287107537, guid: cfa37187790374fb0a25a6a90b2236a4, type: 3}
+    initialSize: 15
+--- !u!4 &1777984540
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1777984538}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 1607.8925, y: 1020.7093, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1789505074
 GameObject:
   m_ObjectHideFlags: 0
@@ -66577,37 +66641,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2095246723}
   m_Mesh: {fileID: -1340541719380434750, guid: c3568e678d846a349a694e4904eb4247, type: 3}
---- !u!1 &2098090844
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2098090845}
-  m_Layer: 0
-  m_Name: VfxController
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2098090845
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2098090844}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1753867359}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2099008242
 GameObject:
   m_ObjectHideFlags: 0
@@ -74351,5 +74384,6 @@ SceneRoots:
   - {fileID: 2139621384}
   - {fileID: 1495454842}
   - {fileID: 461465879}
+  - {fileID: 1777984540}
   - {fileID: 1753867359}
   - {fileID: 1911338670}

@@ -5,7 +5,7 @@ using UnityEngine;
 public class TomatoCrop : Crop
 {
     public override ProductType ProductType => ProductType.Tomato;
-    public override string DisplayName => "Tomato";
+    public override string DisplayName => IsReadyToHarvest() ? Farm.TOMATOSEED : Farm.TOMATOMATURE;
 
     public TomatoCrop(int growthTimeMinutes, int maxHarvests)
         : base(growthTimeMinutes, maxHarvests)

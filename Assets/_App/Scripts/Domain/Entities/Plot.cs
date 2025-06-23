@@ -18,6 +18,8 @@ public class Plot
 
     public bool CanPlant => State == PlotState.Empty;
     public bool CanHarvest => Content?.IsReadyToHarvest() == true;
+    public bool IsFinalState { get; set; } = false;
+    public bool IsTriggerUpdateVisual { get; set; } = false;
 
     // Kiểm tra xem có thể plant loại này không
     public bool CanPlantType(CropType cropType)
@@ -64,8 +66,8 @@ public class Plot
 
         if (Content.IsExpired())
         {
-            Content = null;
-            State = PlotState.Empty;
+            Debug.Log("Plot is expired, resetting content.");
+            Reset();
         }
 
         return product;
@@ -81,5 +83,14 @@ public class Plot
             PlotState.Dead => Color.red,
             _ => Color.gray
         };
-    }    
+    }
+
+    public void Reset()
+    {
+        Content = null;
+        State = PlotState.Empty;
+        LastActionTime = DateTime.Now;
+        IsFinalState = false;
+        IsTriggerUpdateVisual = false;
+    }
 }

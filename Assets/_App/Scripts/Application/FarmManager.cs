@@ -5,6 +5,7 @@ using System;
 using System.Linq;
 using UnityEngine.UI;
 using TMPro;
+using System.Text;
 
 public class FarmManager : MonoBehaviour
 {
@@ -24,12 +25,6 @@ public class FarmManager : MonoBehaviour
     public Material growingPlotMaterial;
     public Material readyPlotMaterial;
 
-    [Header("Content Prefabs")]
-    public GameObject tomatoPrefab;
-    public GameObject blueberryPrefab;
-    public GameObject strawberryPrefab;
-    public GameObject cowPrefab;
-
     [Header("Zone Colors")]
     public Material strawberryZoneMaterial;
     public Material tomatoZoneMaterial;
@@ -42,6 +37,10 @@ public class FarmManager : MonoBehaviour
 
     private float uiUpdateTimer = 0f;
     private const float UI_UPDATE_INTERVAL = 1f; // Cập nhật mỗi giây
+
+
+    private StringBuilder _plotInfoBuilder = new StringBuilder(100);
+
 
 
     private void Update()
@@ -72,6 +71,20 @@ public class FarmManager : MonoBehaviour
         this.farm = farm;
         CreateAllPlots();
         farm.FarmStateChanged += OnFarmStateChanged;
+        farm.PlotStateChanged += OnPlotStateChanged;
+    }
+
+    private void OnPlotStateChanged(Plot plot)
+    {
+        // Cập nhật visual cho plot khi trạng thái thay đổi
+        if (plotGameObjects.TryGetValue(plot.Id, out GameObject plotGO))
+        {
+            UpdatePlotVisual(plot);
+        }
+        else
+        {
+            Debug.LogError($"FarmManager: Plot GameObject for plot {plot.Id} not found!");
+        }
     }
 
     private void CreateAllPlots()
@@ -194,7 +207,11 @@ public class FarmManager : MonoBehaviour
 
     private void UpdatePlotVisual(Plot plot)
     {
-        if (!plotGameObjects.TryGetValue(plot.Id, out GameObject plotGO)) return;
+        if (!plotGameObjects.TryGetValue(plot.Id, out GameObject plotGO))
+        {
+            Debug.LogError($"FarmManager: Plot GameObject for plot {plot.Id} not found!");
+            return;
+        }
 
         Renderer renderer = plotGO.GetComponent<Renderer>();
         if (renderer != null)
@@ -237,47 +254,76 @@ public class FarmManager : MonoBehaviour
 
     private void UpdatePlotContent(Plot plot)
     {
-        // Remove existing content
-        if (contentGameObjects.TryGetValue(plot.Id, out GameObject existingContent))
+
+        Debug.Log("FarmManager: Updating content for plot " + plot.Id);
+
+        GameObject currentContent = null;
+        contentGameObjects.TryGetValue(plot.Id, out currentContent);
+
+        if (plot.Content == null)
         {
-            if (existingContent != null)
+            Debug.Log("FarmManager: Plot " + plot.Id + " is empty, removing content.");
+            if (currentContent != null)
             {
-                DestroyImmediate(existingContent);
+                Debug.Log("FarmManager: Returning content to pool for plot " + plot.Id);
+                string currentTag = GetContentTag(currentContent);
+                ObjectPooler.Instance.ReturnToPool(currentTag, currentContent);
+                contentGameObjects.Remove(plot.Id);
             }
-            contentGameObjects.Remove(plot.Id);
+            return;
         }
 
-        // Add new content if plot has something
-        if (plot.Content != null)
-        {
-            GameObject contentPrefab = GetContentPrefab(plot.Content);
-            if (contentPrefab != null)
-            {
-                Vector3 plotPosition = GetPlotWorldPosition(plot.Id);
-                Vector3 contentPosition = plotPosition + Vector3.up * 0.5f; // Spawn above plot
-                GameObject contentGO = Instantiate(contentPrefab, contentPosition, Quaternion.identity, transform);
-                contentGO.name = $"Content_{plot.Id}_{plot.Content.GetDisplayName()}";
 
-                contentGameObjects[plot.Id] = contentGO;
-            }
+        GameObject newContent = ObjectPooler.Instance.UpdateContentVisual(plot.Content, currentContent);
+        
+        if (newContent != null)
+        {
+            Vector3 plotPosition = GetPlotWorldPosition(plot.Id);
+            Vector3 contentPosition = plotPosition + Vector3.up * 0.5f;
+
+            newContent.transform.position = contentPosition;
+            newContent.transform.SetParent(transform);
+            newContent.name = $"{plot.Content.GetDisplayName()}";
+
+            // Cập nhật dictionary
+            contentGameObjects[plot.Id] = newContent;
         }
+    }
+
+    private string GetContentTag(GameObject contentObj)
+    {
+        if (contentObj == null) return string.Empty;
+
+        string objName = contentObj.name.Replace("(Clone)", "").Trim();
+
+        // Kiểm tra tên để xác định tag
+        if (objName.Contains("TomatoSeed")) return Farm.TOMATOSEED;
+        if (objName.Contains("TomatoMature")) return Farm.TOMATOMATURE;
+        if (objName.Contains("BlueberrySeed")) return Farm.BLUEBERRYSEED;
+        if (objName.Contains("BlueberryMature")) return Farm.BLUEBERRYMATURE;
+        if (objName.Contains("StrawberrySeed")) return Farm.STRAWBERRYSEED;
+        if (objName.Contains("StrawberryMature")) return Farm.STRAWBERRYMATURE;
+        if (objName.Contains("Cow") && !objName.Contains("Mature")) return Farm.COW;
+        if (objName.Contains("CowMature")) return Farm.COWMATURE;
+
+        return string.Empty;
     }
 
     private GameObject GetContentPrefab(IPlantable content)
     {
         return content switch
         {
-            TomatoCrop => tomatoPrefab,
-            BlueberryCrop => blueberryPrefab,
-            StrawberryCrop => strawberryPrefab,
-            Cow => cowPrefab,
+            TomatoCrop => ObjectPooler.Instance.GetFromPool(Farm.TOMATOSEED),
+            BlueberryCrop => ObjectPooler.Instance.GetFromPool(Farm.BLUEBERRYSEED),
+            StrawberryCrop => ObjectPooler.Instance.GetFromPool(Farm.STRAWBERRYSEED),
+            Cow => ObjectPooler.Instance.GetFromPool(Farm.COW),
             _ => null
         };
     }
 
+
     private void UpdatePlotInfoDisplay(GameObject plotGO, Plot plot)
     {
-        // Find or create text display above plot
         Transform textTransform = plotGO.transform.Find("PlotInfo");
         if (textTransform == null)
         {
@@ -285,14 +331,11 @@ public class FarmManager : MonoBehaviour
             textGO.transform.SetParent(plotGO.transform);
             textGO.transform.localPosition = Vector3.up * 2f;
 
-            // Create world space canvas
             Canvas canvas = textGO.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.WorldSpace;
             textGO.GetComponent<RectTransform>().sizeDelta = new Vector2(300, 100); // Set size for text
             canvas.transform.localScale = Vector3.one * 0.01f;
 
-
-            // Add text component
             TextMeshProUGUI text = textGO.AddComponent<TextMeshProUGUI>();
             text.text = "Plot";
             text.font = Resources.Load<TMP_FontAsset>("Fonts/LilitaOne-(for 'greater than' symbol)");
@@ -300,50 +343,59 @@ public class FarmManager : MonoBehaviour
             text.color = GetZoneColor(plot.Zone);
             text.alignment = TextAlignmentOptions.Center;
 
-            // Add ContentSizeFitter
             textGO.AddComponent<ContentSizeFitter>();
 
-            // Add FacingCamera script
-            // textGO.AddComponent<FacingCamera>();
-
             textGO.transform.rotation = Quaternion.Euler(120, -180, 0);
-
             textGO.GetComponent<RectTransform>().anchoredPosition = new Vector3(0, 35, 0);
-
 
             textTransform = textGO.transform;
         }
 
-        // Update text content
         var textComponent = textTransform.GetComponent<TextMeshProUGUI>();
         if (textComponent != null)
         {
-            string plotInfo = $"Plot {plot.Id}\n";
+            _plotInfoBuilder.Clear();
+            _plotInfoBuilder.Append("Plot ").Append(plot.Id).Append('\n');
+
             if (plot.Content != null)
             {
-                plotInfo += $"{plot.Content.GetDisplayName()}\n";
+                _plotInfoBuilder.Append(plot.Content.GetDisplayName()).Append('\n');
+
                 if (plot.CanHarvest)
                 {
-                    plotInfo += "Ready!";
+                    // if (plot.IsTriggerUpdateVisual == false)
+                    // {
+                    //     plot.IsTriggerUpdateVisual = true;
+                    //     OnPlotStateChanged(plot);
+                    // }
+                    _plotInfoBuilder.Append("Ready!");
                 }
                 else
                 {
                     var timeToNext = plot.Content.GetTimeToNextHarvest();
-                    plotInfo += $"{timeToNext.Minutes:D2}:{timeToNext.Seconds:D2}";
+                    _plotInfoBuilder.Append(timeToNext.Minutes.ToString("D2"))
+                                   .Append(':')
+                                   .Append(timeToNext.Seconds.ToString("D2"));
                 }
-                plotInfo += $"\n[{plot.Content.GetCurrentHarvests()}/{plot.Content.GetMaxHarvests()}]";
+
+                _plotInfoBuilder.Append('\n')
+                               .Append('[')
+                               .Append(plot.Content.GetCurrentHarvests())
+                               .Append('/')
+                               .Append(plot.Content.GetMaxHarvests())
+                               .Append(']');
             }
             else
             {
-                plotInfo += "Empty";
+                _plotInfoBuilder.Append("Empty");
             }
-            textComponent.text = plotInfo;
+
+            textComponent.text = _plotInfoBuilder.ToString();
         }
-
-
     }
 
     // private 
+
 
     private Color GetZoneColor(PlotZone zone)
     {

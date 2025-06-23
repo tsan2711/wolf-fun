@@ -19,7 +19,9 @@ public abstract class Crop : IPlantable
 
     public Crop(int growthTimeMinutes = 5, int maxHarvests = 10)
     {
-        this.growthTimeMinutes = growthTimeMinutes;
+        // this.growthTimeMinutes = growthTimeMinutes;
+        this.growthTimeMinutes = 1;
+
         this.maxHarvests = maxHarvests;
         CurrentHarvests = 0;
         PlantedTime = DateTime.MinValue;

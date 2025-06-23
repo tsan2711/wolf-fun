@@ -5,7 +5,7 @@ using UnityEngine;
 public class StrawberryCrop : Crop
 {
     public override ProductType ProductType => ProductType.Strawberry;
-    public override string DisplayName => "Strawberry";
+    public override string DisplayName => IsReadyToHarvest() ? Farm.STRAWBERRYSEED : Farm.STRAWBERRYMATURE;
     public StrawberryCrop(int growthTimeMinutes, int maxHarvests)
         : base(growthTimeMinutes, maxHarvests)
     {
