@@ -70,7 +70,12 @@ Workers autonomously:
 - Return to base when done
 
 
-<img width="868" alt="Screenshot 2025-06-24 at 17 12 50" src="https://github.com/user-attachments/assets/8f710340-514b-4bdf-af08-1025e2769d85" />
+<img width="1709" alt="Screenshot 2025-06-24 at 17 20 12" src="https://github.com/user-attachments/assets/21c6f8bc-3469-426b-a941-7c1c9adfa3d4" />
+
+
+https://github.com/user-attachments/assets/07cf84c9-9ed4-40df-a1d8-e93f2fe15c1f
+
+
 
 
 ![AI Behavior](path/to/ai-demo.gif)
@@ -85,6 +90,10 @@ Workers autonomously:
 - **Scaling Profits**: More cows = more money
 
 ![Livestock](path/to/livestock-demo.gif)
+
+<img width="958" alt="Screenshot 2025-06-24 at 17 14 49" src="https://github.com/user-attachments/assets/4f2fb89e-d820-4b92-9e3f-1eb143136914" />
+
+<img width="1709" alt="Screenshot 2025-06-24 at 17 16 50" src="https://github.com/user-attachments/assets/490a7b78-fd57-4dde-8e31-f4436b06e4b9" />
 
 </details>
 
