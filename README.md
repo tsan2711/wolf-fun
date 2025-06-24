@@ -199,7 +199,7 @@ public class WorkerStateMachine {
 
 <div align="center">
 
-[![Watch Gameplay](https://img.shields.io/badge/🎬_Watch-Gameplay_Video-red?style=for-the-badge&logo=youtube)]([https://tsan2711.github.io/wolf-fun-demo/](https://drive.google.com/drive/folders/1OUMY42eAKklgRxVm_3R91rIgHGCRSlS5?usp=sharing))
+[![Watch Gameplay](https://img.shields.io/badge/🎬_Watch-Gameplay_Video-red?style=for-the-badge&logo=youtube)](https://drive.google.com/drive/folders/1OUMY42eAKklgRxVm_3R91rIgHGCRSlS5?usp=sharing)
 
 *See the AI workers in action - full gameplay showcase*
 
