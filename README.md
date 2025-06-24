@@ -187,7 +187,7 @@ public class WorkerStateMachine {
 <div align="center">
 
 [![Download for Windows](https://img.shields.io/badge/Download-Windows-blue?style=for-the-badge&logo=windows)](https://github.com/tsan2711/wolf-fun/releases/download/v1.0/tansang-wolf-fun-testing-windows-v1.0.zip)
-[![Download for Mac](https://img.shields.io/badge/Download-macOS-black?style=for-the-badge&logo=apple)](https://github.com/tsan2711/wolf-fun/releases/download/v1.0/tansang-wolf-fun-testing-macos-v1.0.zip)
+[![Download for Mac](https://img.shields.io/badge/Download-macOS-black?style=for-the-badge&logo=apple)](https://github.com/tsan2711/wolf-fun/releases/download/v1.0/tansang-wolf-fun-tesing-macos-v1.0.zip)
 
 **System Requirements**: Windows 10+ or macOS 10.15+ • 4GB RAM • DirectX 11
 
