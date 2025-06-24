@@ -14,6 +14,5 @@ public class SleepingState : BaseState
 
     public override void Tick()
     {
-        // Sleep until morning
     }
 }

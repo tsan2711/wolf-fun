@@ -69,8 +69,5 @@ public class WorkerUIManager : MonoBehaviour, IUIManager
         }
     }
 
-    public void Activate(bool v)
-    {
-        WorkerContainer.gameObject.SetActive(v);
-    }
+    public void Activate(bool v) => WorkerContainer.gameObject.SetActive(v);
 }

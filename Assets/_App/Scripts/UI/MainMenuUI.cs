@@ -81,7 +81,7 @@ public class MainMenuUI : MonoBehaviour
         // Transition effect
         transform.DOScale(0f, 0.5f).SetEase(Ease.InBack).OnComplete(() =>
         {
-            SaveLoadSystem.DeleteSave();
+            SaveLoadSystem.DeleteSaveFile();
             SceneController.Loading(); // Go to game via loading
         });
 

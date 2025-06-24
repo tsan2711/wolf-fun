@@ -17,7 +17,7 @@ public interface IGameUI
     event Action<ProductType> UpgradeEquipmentRequested;
     event Action AutoHarvestRequested;
     event Action<CropType> AutoPlantRequested;
-    event Action<AnimalType> AutoPlaceAnimalRequested;  // New event for auto placing animals
+    event Action<AnimalType> AutoPlaceAnimalRequested;  
     event Action<ProductType, int> SellProductRequested;
     public event Action UIInitializeCompleted;
     public event Action<int> OnHourPassed;

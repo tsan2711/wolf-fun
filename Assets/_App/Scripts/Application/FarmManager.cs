@@ -106,7 +106,6 @@ public class FarmManager : MonoBehaviour
 
         Vector3 plotPosition = GetPlotWorldPosition(plot.Id);
 
-        // Check collision
         if (IsPositionOccupied(plotPosition))
         {
             Debug.LogWarning($"Position {plotPosition} is occupied! Plot {plot.Id} may overlap.");
@@ -267,6 +266,8 @@ public class FarmManager : MonoBehaviour
             {
                 Debug.Log("FarmManager: Returning content to pool for plot " + plot.Id);
                 string currentTag = GetContentTag(currentContent);
+
+                Debug.Log("FarmManager: Returning content with tag: " + currentTag);
                 ObjectPooler.Instance.ReturnToPool(currentTag, currentContent);
                 contentGameObjects.Remove(plot.Id);
             }
@@ -296,15 +297,17 @@ public class FarmManager : MonoBehaviour
 
         string objName = contentObj.name.Replace("(Clone)", "").Trim();
 
+        Debug.Log("FarmManager: Getting tag for content object: " + objName);
+
         // Kiểm tra tên để xác định tag
-        if (objName.Contains("TomatoSeed")) return Farm.TOMATOSEED;
-        if (objName.Contains("TomatoMature")) return Farm.TOMATOMATURE;
-        if (objName.Contains("BlueberrySeed")) return Farm.BLUEBERRYSEED;
-        if (objName.Contains("BlueberryMature")) return Farm.BLUEBERRYMATURE;
-        if (objName.Contains("StrawberrySeed")) return Farm.STRAWBERRYSEED;
-        if (objName.Contains("StrawberryMature")) return Farm.STRAWBERRYMATURE;
+        if (objName.Contains("Tomato Seed")) return Farm.TOMATOSEED;
+        if (objName.Contains("Tomato Mature")) return Farm.TOMATOMATURE;
+        if (objName.Contains("Blueberry Seed")) return Farm.BLUEBERRYSEED;
+        if (objName.Contains("Blueberry Mature")) return Farm.BLUEBERRYMATURE;
+        if (objName.Contains("Strawberry Seed")) return Farm.STRAWBERRYSEED;
+        if (objName.Contains("Strawberry Mature")) return Farm.STRAWBERRYMATURE;
         if (objName.Contains("Cow") && !objName.Contains("Mature")) return Farm.COW;
-        if (objName.Contains("CowMature")) return Farm.COWMATURE;
+        if (objName.Contains("Cow Mature")) return Farm.COWMATURE;
 
         return string.Empty;
     }

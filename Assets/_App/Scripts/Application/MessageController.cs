@@ -43,6 +43,7 @@ public class MessageSystem : Singleton<MessageSystem>
     private Vector3 _originalScale;
     private Vector3 _originalPosition;
     private bool _canDismiss = false;
+    protected override bool IsDontDestroyOnLoad => false;
 
     protected override void Awake()
     {
@@ -197,7 +198,7 @@ public class MessageSystem : Singleton<MessageSystem>
         {
             dismissButton.onClick.AddListener(DismissMessage);
         }
-        
+
         // Setup click-to-dismiss on the panel itself
         if (messagePanel != null)
         {
@@ -209,7 +210,7 @@ public class MessageSystem : Singleton<MessageSystem>
                 // Make it invisible but clickable
                 panelButton.transition = Selectable.Transition.None;
             }
-            
+
             panelButton.onClick.RemoveAllListeners();
             panelButton.onClick.AddListener(DismissMessage);
         }
@@ -220,11 +221,11 @@ public class MessageSystem : Singleton<MessageSystem>
         if (!_canDismiss || _showMessageCoroutine == null) return;
 
         Debug.Log("[MESSAGE] Dismissed by click");
-        
+
         // Stop the current coroutine and start exit animation
         StopCoroutine(_showMessageCoroutine);
         _canDismiss = false;
-        
+
         StartCoroutine(DismissMessageCoroutine());
     }
 
@@ -271,11 +272,11 @@ public class MessageSystem : Singleton<MessageSystem>
         {
             canvasGroup.alpha = 0f;
             messagePanel.transform.localScale = Vector3.zero;
-            
+
             var sequence = DOTween.Sequence();
             sequence.Append(canvasGroup.DOFade(1f, fadeInDuration).SetEase(Ease.OutQuad));
             sequence.Join(messagePanel.transform.DOScale(_originalScale, scaleInDuration).SetEase(Ease.OutBack));
-            
+
             yield return sequence.WaitForCompletion();
         }
         else
@@ -290,9 +291,9 @@ public class MessageSystem : Singleton<MessageSystem>
         {
             Vector3 startPos = _originalPosition + Vector3.up * slideDistance;
             messagePanel.transform.localPosition = startPos;
-            
+
             if (canvasGroup != null) canvasGroup.alpha = 1f;
-            
+
             yield return messagePanel.transform.DOLocalMove(_originalPosition, fadeInDuration).SetEase(Ease.OutQuart).WaitForCompletion();
         }
         else
@@ -307,9 +308,9 @@ public class MessageSystem : Singleton<MessageSystem>
         {
             Vector3 startPos = _originalPosition + Vector3.down * slideDistance;
             messagePanel.transform.localPosition = startPos;
-            
+
             if (canvasGroup != null) canvasGroup.alpha = 1f;
-            
+
             yield return messagePanel.transform.DOLocalMove(_originalPosition, fadeInDuration).SetEase(Ease.OutQuart).WaitForCompletion();
         }
         else
@@ -324,12 +325,12 @@ public class MessageSystem : Singleton<MessageSystem>
         {
             canvasGroup.alpha = 0f;
             messagePanel.transform.localScale = Vector3.zero;
-            
+
             var sequence = DOTween.Sequence();
             sequence.Append(canvasGroup.DOFade(1f, fadeInDuration * 0.5f).SetEase(Ease.OutQuad));
             sequence.Join(messagePanel.transform.DOScale(_originalScale * 1.1f, scaleInDuration * 0.6f).SetEase(Ease.OutQuad));
             sequence.Append(messagePanel.transform.DOScale(_originalScale, scaleInDuration * 0.4f).SetEase(Ease.OutBounce));
-            
+
             yield return sequence.WaitForCompletion();
         }
         else
@@ -369,7 +370,7 @@ public class MessageSystem : Singleton<MessageSystem>
             var sequence = DOTween.Sequence();
             sequence.Append(canvasGroup.DOFade(0f, fadeOutDuration).SetEase(Ease.InQuad));
             sequence.Join(messagePanel.transform.DOScale(Vector3.zero, fadeOutDuration).SetEase(Ease.InBack));
-            
+
             yield return sequence.WaitForCompletion();
         }
         else
@@ -412,7 +413,7 @@ public class MessageSystem : Singleton<MessageSystem>
             sequence.Append(messagePanel.transform.DOScale(_originalScale * 1.05f, fadeOutDuration * 0.3f).SetEase(Ease.OutQuad));
             sequence.Append(canvasGroup.DOFade(0f, fadeOutDuration * 0.7f).SetEase(Ease.InQuad));
             sequence.Join(messagePanel.transform.DOScale(Vector3.zero, fadeOutDuration * 0.7f).SetEase(Ease.InBack));
-            
+
             yield return sequence.WaitForCompletion();
         }
         else
@@ -473,9 +474,8 @@ public class MessageSystem : Singleton<MessageSystem>
         animationType = oldType;
     }
 
-    private void OnDestroy()
+    protected override void OnDestroy()
     {
-        // Clean up DOTween animations
         messagePanel?.transform.DOKill();
         canvasGroup?.DOKill();
     }

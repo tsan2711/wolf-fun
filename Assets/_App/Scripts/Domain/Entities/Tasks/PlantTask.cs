@@ -24,9 +24,16 @@ public class PlantTask : IWorkTask
     }
 
     public TaskType GetTaskType() => TaskType.Plant;
-
     private IPlantable CreateCrop(CropType cropType)
     {
+        var gameController = GameController.Instance;
+        if (gameController != null)
+        {
+            // SỬ DỤNG FACTORY METHOD CÓ CONFIG
+            return gameController.CreateCrop(cropType);
+        }
+
+        // Fallback
         return cropType switch
         {
             CropType.Tomato => new TomatoCrop(),

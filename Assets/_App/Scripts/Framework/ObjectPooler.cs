@@ -15,6 +15,7 @@ public class ObjectPooler : Singleton<ObjectPooler>
 
     private Dictionary<string, Queue<GameObject>> poolDictionary;
 
+    protected override bool IsDontDestroyOnLoad => true;
 
     protected override void Awake()
     {
@@ -66,7 +67,6 @@ public class ObjectPooler : Singleton<ObjectPooler>
 
         Queue<GameObject> pool = poolDictionary[tag];
 
-        // Nếu pool rỗng, tạo object mới
         if (pool.Count == 0)
         {
             Pool poolData = GetPoolByTag(tag);
@@ -79,7 +79,6 @@ public class ObjectPooler : Singleton<ObjectPooler>
             return null;
         }
 
-        // Lấy object từ pool và kích hoạt
         GameObject obj = pool.Dequeue();
         obj.SetActive(true);
         return obj;
@@ -108,7 +107,6 @@ public class ObjectPooler : Singleton<ObjectPooler>
             return;
         }
 
-        // Vô hiệu hóa object và trả về pool
         obj.SetActive(false);
         obj.transform.SetParent(transform);
         poolDictionary[tag].Enqueue(obj);
@@ -150,12 +148,12 @@ public class ObjectPooler : Singleton<ObjectPooler>
     {
         if (obj == null) return string.Empty;
 
-        // Kiểm tra tên object để xác định tag
         string objName = obj.name.Replace("(Clone)", "").Trim();
+
 
         foreach (Pool pool in pools)
         {
-            if (objName.Contains(pool.prefab.name))
+            if (objName.Contains(pool.tag))
             {
                 return pool.tag;
             }

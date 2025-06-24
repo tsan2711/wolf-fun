@@ -1,11 +1,9 @@
 using System;
-using UnityEngine;
-
 [Serializable]
 public class TomatoCrop : Crop
 {
     public override ProductType ProductType => ProductType.Tomato;
-    public override string DisplayName => IsReadyToHarvest() ? Farm.TOMATOSEED : Farm.TOMATOMATURE;
+    public override string DisplayName => IsReadyToHarvest() ? Farm.TOMATOMATURE : Farm.TOMATOSEED;
 
     public TomatoCrop(int growthTimeMinutes, int maxHarvests)
         : base(growthTimeMinutes, maxHarvests)
@@ -14,7 +12,7 @@ public class TomatoCrop : Crop
 
     public TomatoCrop() : base()
     {
-        this.growthTimeMinutes = 20;
-        this.maxHarvests = 50;
+        // this.growthTimeMinutes = 20;
+        // this.maxHarvests = 50;
     }
 }

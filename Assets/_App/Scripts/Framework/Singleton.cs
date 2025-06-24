@@ -6,6 +6,7 @@ public class Singleton<T> : MonoBehaviour where T : MonoBehaviour
 {
     private static Dictionary<Type, MonoBehaviour> instances = new Dictionary<Type, MonoBehaviour>();
 
+    protected virtual bool IsDontDestroyOnLoad => true;
     public static T Instance
     {
         get
@@ -17,7 +18,6 @@ public class Singleton<T> : MonoBehaviour where T : MonoBehaviour
                 return instances[type] as T;
             }
 
-            // Nếu không tìm thấy, tìm trong scene
             T foundInstance = FindAnyObjectByType<T>();
             if (foundInstance == null)
             {
@@ -25,17 +25,12 @@ public class Singleton<T> : MonoBehaviour where T : MonoBehaviour
                 return null;
             }
 
-            // Lưu trữ đối tượng tìm được vào dictionary
             (foundInstance as Singleton<T>)?.RegisterInstance();
             return foundInstance;
         }
     }
 
-    protected virtual void Awake()
-    {
-        // Đăng ký instance khi đối tượng được tạo
-        RegisterInstance();
-    }
+    protected virtual void Awake() => RegisterInstance();
 
     private void RegisterInstance()
     {
@@ -45,8 +40,7 @@ public class Singleton<T> : MonoBehaviour where T : MonoBehaviour
         {
             instances[type] = this;
 
-            // Đảm bảo đối tượng không bị hủy khi chuyển scene
-            DontDestroyOnLoad(gameObject);
+            if (IsDontDestroyOnLoad) DontDestroyOnLoad(gameObject);
         }
         else if (instances[type] != this)
         {
@@ -57,7 +51,6 @@ public class Singleton<T> : MonoBehaviour where T : MonoBehaviour
 
     protected virtual void OnDestroy()
     {
-        // Xóa instance khi đối tượng bị hủy
         Type type = typeof(T);
         if (instances.ContainsKey(type) && instances[type] == this)
         {

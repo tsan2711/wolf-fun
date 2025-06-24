@@ -5,33 +5,43 @@ using UnityEngine;
 public class Plot
 {
     public int Id { get; }
-    public PlotZone Zone { get; }  // THÊM MỚI
+    public PlotZone Zone { get; }
     public IPlantable Content { get; private set; }
-    public PlotState State { get; private set; } = PlotState.Empty;
     public DateTime LastActionTime { get; private set; }
+    private readonly Farm _farm;
 
-    public Plot(int id, PlotZone zone)  // THÊM PARAMETER
-    {
-        Id = id;
-        Zone = zone;
+    // Simple state property
+    public PlotState State 
+    { 
+        get 
+        {
+            if (Content == null) return PlotState.Empty;
+            if (Content.IsExpired()) return PlotState.Dead;
+            if (Content.IsReadyToHarvest()) return PlotState.ReadyToHarvest;
+            return PlotState.Growing;
+        } 
     }
 
-    public bool CanPlant => State == PlotState.Empty;
-    public bool CanHarvest => Content?.IsReadyToHarvest() == true;
-    public bool IsFinalState { get; set; } = false;
-    public bool IsTriggerUpdateVisual { get; set; } = false;
+    public Plot(Farm farm, int id, PlotZone zone)
+    {
+        _farm = farm ?? throw new ArgumentNullException(nameof(farm));
+        Id = id;
+        Zone = zone;
+        LastActionTime = DateTime.Now;
+    }
 
-    // Kiểm tra xem có thể plant loại này không
+    public bool CanPlant => Content == null;
+    public bool CanHarvest => Content?.IsReadyToHarvest() == true;
+
     public bool CanPlantType(CropType cropType)
     {
         if (!CanPlant) return false;
-
         return Zone switch
         {
             PlotZone.Strawberry => cropType == CropType.Strawberry,
             PlotZone.Tomato => cropType == CropType.Tomato,
             PlotZone.Blueberry => cropType == CropType.Blueberry,
-            PlotZone.Cow => false, // Cow zone không plant crops
+            PlotZone.Cow => false,
             _ => false
         };
     }
@@ -39,58 +49,44 @@ public class Plot
     public bool CanPlaceAnimal(AnimalType animalType)
     {
         if (!CanPlant) return false;
-
         return Zone switch
         {
             PlotZone.Cow => animalType == AnimalType.Cow,
-            _ => false // Chỉ Cow zone mới place animals
+            _ => false
         };
     }
 
     public void Plant(IPlantable plantable)
     {
         if (!CanPlant) return;
-
         Content = plantable;
-        State = PlotState.Growing;
         LastActionTime = DateTime.Now;
         plantable.Plant(DateTime.Now);
+        _farm.TriggerPlotStateChanged(this);
     }
 
     public ProductType? Harvest()
     {
         if (!CanHarvest) return null;
-
         var product = Content.Harvest();
         LastActionTime = DateTime.Now;
-
+        _farm.OnPlotStateChange(this);
+        
         if (Content.IsExpired())
         {
-            Debug.Log("Plot is expired, resetting content.");
             Reset();
         }
-
         return product;
-    }
-
-    public Color GetColor()
-    {
-        return State switch
-        {
-            PlotState.Empty => Color.white,
-            PlotState.Growing => Color.green,
-            PlotState.ReadyToHarvest => Color.yellow,
-            PlotState.Dead => Color.red,
-            _ => Color.gray
-        };
     }
 
     public void Reset()
     {
         Content = null;
-        State = PlotState.Empty;
         LastActionTime = DateTime.Now;
-        IsFinalState = false;
-        IsTriggerUpdateVisual = false;
+        _farm.TriggerPlotStateChanged(this);
     }
+
+    // Simple methods for save/load
+    public void SetContent(IPlantable content) => Content = content;
+    public void SetLastActionTime(DateTime time) => LastActionTime = time;
 }

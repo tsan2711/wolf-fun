@@ -8,6 +8,5 @@ public class IdleState : BaseState
 
     public override void Tick()
     {
-        // Just wait for task assignment
     }
 }

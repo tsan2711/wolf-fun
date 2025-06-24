@@ -1,6 +1,4 @@
 using System;
-using UnityEngine;
-
 [Serializable]
 public class Cow : Crop
 {
@@ -14,8 +12,7 @@ public class Cow : Crop
 
     public Cow() : base()
     {
-        // Override default values cho Cow
-        this.growthTimeMinutes = 30;
-        this.maxHarvests = 100;
+        // this.growthTimeMinutes = 30;
+        // this.maxHarvests = 100;
     }
 }

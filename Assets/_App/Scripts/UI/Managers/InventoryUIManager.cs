@@ -6,12 +6,12 @@ public class InventoryUIManager : MonoBehaviour, IUIManager
 {
     [Header("Prefab References")]
     [SerializeField] private InventoryUIItem inventoryItemPrefab;
-    
+
     [Header("Container References")]
     public Transform InventoryContainer;
     [SerializeField] private Transform seedsContent;
     [SerializeField] private Transform productsContent;
-    
+
     [Header("Icon References")]
     [SerializeField] private InventoryIconData iconData;
 
@@ -19,44 +19,40 @@ public class InventoryUIManager : MonoBehaviour, IUIManager
     private Dictionary<string, InventoryUIItem> _animalItems = new Dictionary<string, InventoryUIItem>();  // THÊM MỚI
     private Dictionary<string, InventoryUIItem> _productItems = new Dictionary<string, InventoryUIItem>();
 
-    // Events for sell actions
-    public System.Action<ProductType, int> OnSellProductRequested;
+    public Action<ProductType, int> OnSellProductRequested;
 
     public void Initialize()
     {
         CreateSeedItems();
-        CreateAnimalItems();  // THÊM MỚI
+        CreateAnimalItems();
         CreateProductItems();
     }
 
     private void CreateSeedItems()
     {
-        foreach (CropType cropType in System.Enum.GetValues(typeof(CropType)))
+        foreach (CropType cropType in Enum.GetValues(typeof(CropType)))
         {
             GameObject itemGO = Instantiate(inventoryItemPrefab.gameObject, seedsContent);
             InventoryUIItem item = itemGO.GetComponent<InventoryUIItem>();
-            
+
             string itemName = $"{cropType} Seeds";
             Sprite icon = iconData.GetSeedIcon(cropType);
-            
-            // Seeds don't have sell action
+
             item.Initialize(itemName, 0, icon, null);
             _seedItems[cropType.ToString()] = item;
         }
     }
 
-    // THÊM METHOD MỚI
     private void CreateAnimalItems()
     {
         foreach (AnimalType animalType in System.Enum.GetValues(typeof(AnimalType)))
         {
             GameObject itemGO = Instantiate(inventoryItemPrefab.gameObject, seedsContent);
             InventoryUIItem item = itemGO.GetComponent<InventoryUIItem>();
-            
+
             string itemName = animalType.ToString();
-            Sprite icon = iconData.GetAnimalIcon(animalType);  // Cần thêm method này
-            
-            // Animals don't have sell action (they are placed, not sold directly)
+            Sprite icon = iconData.GetAnimalIcon(animalType);
+
             item.Initialize(itemName, 0, icon, null);
             _animalItems[animalType.ToString()] = item;
         }
@@ -67,24 +63,21 @@ public class InventoryUIManager : MonoBehaviour, IUIManager
         foreach (ProductType productType in System.Enum.GetValues(typeof(ProductType)))
         {
             if (productType == ProductType.None) continue;
-            
+
             GameObject itemGO = Instantiate(inventoryItemPrefab.gameObject, productsContent);
             InventoryUIItem item = itemGO.GetComponent<InventoryUIItem>();
-            
+
             string itemName = productType.ToString();
             Sprite icon = iconData.GetProductIcon(productType);
-            
-            // Products have sell action
+
             UnityEngine.Events.UnityAction sellAction = () => OnSellProductRequested?.Invoke(productType, 1);
             item.Initialize(itemName, 0, icon, sellAction);
             _productItems[productType.ToString()] = item;
         }
     }
 
-    // CẬP NHẬT METHOD UpdateInventory
     public void UpdateInventory(Dictionary<CropType, int> seeds, Dictionary<ProductType, int> products, Dictionary<AnimalType, int> animals = null)
     {
-        // Update seeds
         foreach (var kvp in seeds)
         {
             string key = kvp.Key.ToString();
@@ -96,7 +89,6 @@ public class InventoryUIManager : MonoBehaviour, IUIManager
             }
         }
 
-        // Update animals (THÊM MỚI)
         if (animals != null)
         {
             foreach (var kvp in animals)
@@ -111,7 +103,6 @@ public class InventoryUIManager : MonoBehaviour, IUIManager
             }
         }
 
-        // Update products
         foreach (var kvp in products)
         {
             string key = kvp.Key.ToString();
@@ -125,8 +116,5 @@ public class InventoryUIManager : MonoBehaviour, IUIManager
         }
     }
 
-    public void Activate(bool v)
-    {
-        InventoryContainer.gameObject.SetActive(v);
-    }
+    public void Activate(bool v) => InventoryContainer.gameObject.SetActive(v);
 }

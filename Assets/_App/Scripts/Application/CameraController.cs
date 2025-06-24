@@ -13,8 +13,6 @@ public class CameraController : MonoBehaviour
     [SerializeField] private float maxZ = 27f;
     [SerializeField] private float fixedY = 10f;
     
-    [Header("Debug")]
-    [SerializeField] private bool enableDebug = true;
     
     private Vector3 targetPosition;
     private Vector3 lastMousePos;
@@ -30,8 +28,6 @@ public class CameraController : MonoBehaviour
         targetPosition = transform.position;
         targetPosition.y = fixedY;
         
-        if (enableDebug)
-            Debug.Log($"Camera Controller Start - Initial Position: {targetPosition}");
     }
 
     void Update()
@@ -48,8 +44,7 @@ public class CameraController : MonoBehaviour
             isDragging = true;
             lastMousePos = Input.mousePosition;
             
-            if (enableDebug)
-                Debug.Log($"Start Drag - Mouse Position: {lastMousePos}");
+            
         }
         
         // Mouse up - dừng drag
@@ -57,8 +52,7 @@ public class CameraController : MonoBehaviour
         {
             isDragging = false;
             
-            if (enableDebug)
-                Debug.Log("Stop Drag");
+            
         }
         
         // Đang drag
@@ -66,10 +60,7 @@ public class CameraController : MonoBehaviour
         {
             Vector3 currentMousePos = Input.mousePosition;
             Vector3 mouseDelta = currentMousePos - lastMousePos;
-            
-            if (enableDebug && mouseDelta.magnitude > 0.1f)
-                Debug.Log($"Mouse Delta: {mouseDelta}");
-            
+
             // Chuyển đổi mouse movement thành camera movement
             // Sử dụng camera's right và forward vectors
             Vector3 right = transform.right;
@@ -84,8 +75,6 @@ public class CameraController : MonoBehaviour
             // Tính toán movement
             Vector3 movement = (-right * mouseDelta.x - forward * mouseDelta.y) * dragSpeed * Time.deltaTime;
             
-            if (enableDebug && movement.magnitude > 0.001f)
-                Debug.Log($"Movement: {movement}");
             
             // Cập nhật target position
             targetPosition += movement;
@@ -104,8 +93,6 @@ public class CameraController : MonoBehaviour
         Vector3 oldPos = transform.position;
         transform.position = Vector3.Lerp(transform.position, targetPosition, lerpSpeed * Time.deltaTime);
         
-        if (enableDebug && Vector3.Distance(oldPos, transform.position) > 0.001f)
-            Debug.Log($"Camera moved to: {transform.position}");
     }
     
     public void SetCameraPosition(Vector3 position)

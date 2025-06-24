@@ -11,7 +11,6 @@ public class FacingCamera : MonoBehaviour
     
     void Start()
     {
-        // Get the main camera
         mainCamera = Camera.main;
         if (mainCamera == null)
         {
@@ -23,21 +22,17 @@ public class FacingCamera : MonoBehaviour
     {
         if (mainCamera == null) return;
         
-        // Calculate direction to camera
         Vector3 directionToCamera = mainCamera.transform.position - transform.position;
         
-        // Reverse direction if needed (useful for some UI elements)
         if (reverseDirection)
         {
             directionToCamera = -directionToCamera;
         }
-        
-        // Apply axis locks
+
         if (lockX) directionToCamera.x = 0;
         if (lockY) directionToCamera.y = 0;
         if (lockZ) directionToCamera.z = 0;
         
-        // Only rotate if there's a valid direction
         if (directionToCamera != Vector3.zero)
         {
             transform.rotation = Quaternion.LookRotation(directionToCamera);

@@ -143,24 +143,21 @@ public class MainGameUI : MonoBehaviour, IGameUI
             rightPanelOriginalPos = rightSidePanel.anchoredPosition;
         }
 
-        // Setup toggle buttons
         SetupSidePanelButtons();
     }
 
     private void SetupSidePanelButtons()
     {
-        // Left side toggle button
         if (leftSideToggleButton != null)
         {
             leftSideToggleButton.onClick.AddListener(ToggleLeftPanel);
-            SetupButtonWithClickAnimation(leftSideToggleButton, null); // Animation only, action handled above
+            SetupButtonWithClickAnimation(leftSideToggleButton, null);
         }
 
-        // Right side toggle button
         if (rightSideToggleButton != null)
         {
             rightSideToggleButton.onClick.AddListener(ToggleRightPanel);
-            SetupButtonWithClickAnimation(rightSideToggleButton, null); // Animation only, action handled above
+            SetupButtonWithClickAnimation(rightSideToggleButton, null); 
         }
     }
 
@@ -173,17 +170,10 @@ public class MainGameUI : MonoBehaviour, IGameUI
 
         Vector3 targetPosition;
         if (isLeftPanelOpen)
-        {
-            // Show panel - move to original position
             targetPosition = leftPanelOriginalPos;
-        }
         else
-        {
-            // Hide panel - move left by offset
             targetPosition = leftPanelOriginalPos + Vector3.left * sidePanelOffset;
-        }
 
-        // Animate panel movement
         leftSidePanel.DOAnchorPos(targetPosition, sidePanelAnimationDuration)
                      .SetEase(Ease.OutQuart)
                      .OnComplete(() =>
@@ -192,11 +182,8 @@ public class MainGameUI : MonoBehaviour, IGameUI
                          Debug.Log($"Left panel {(isLeftPanelOpen ? "opened" : "closed")}");
                      });
 
-        // Animate toggle button (optional rotation or scale effect)
         if (leftSideToggleButton != null)
-        {
             AnimateToggleButton(leftSideToggleButton, isLeftPanelOpen);
-        }
     }
 
     public void ToggleRightPanel()
@@ -208,15 +195,9 @@ public class MainGameUI : MonoBehaviour, IGameUI
 
         Vector3 targetPosition;
         if (isRightPanelOpen)
-        {
-            // Show panel - move to original position
             targetPosition = rightPanelOriginalPos;
-        }
         else
-        {
-            // Hide panel - move right by offset
             targetPosition = rightPanelOriginalPos + Vector3.right * sidePanelOffset;
-        }
 
         // Animate panel movement
         rightSidePanel.DOAnchorPos(targetPosition, sidePanelAnimationDuration)
@@ -229,9 +210,7 @@ public class MainGameUI : MonoBehaviour, IGameUI
 
         // Animate toggle button (optional rotation or scale effect)
         if (rightSideToggleButton != null)
-        {
             AnimateToggleButton(rightSideToggleButton, isRightPanelOpen);
-        }
     }
 
     private void AnimateToggleButton(Button toggleButton, bool isPanelOpen)
@@ -595,6 +574,8 @@ public class MainGameUI : MonoBehaviour, IGameUI
         rightSidePanel?.DOKill();
         leftSideToggleButton?.transform.DOKill();
         rightSideToggleButton?.transform.DOKill();
+
+        Debug.Log("MainGameUI destroyed and animations cleaned up.");
     }
 
 
@@ -650,4 +631,7 @@ public class MainGameUI : MonoBehaviour, IGameUI
 
 
     #endregion
+
+
+
 }

@@ -58,7 +58,6 @@ public class Worker : MonoBehaviour
         _farmManager = GameController.Instance?.FarmLayoutManager;
 
         SetUpStateMachine();
-        SetUpLoadingBar();
 
     }
 
@@ -77,12 +76,6 @@ public class Worker : MonoBehaviour
         }
         // Debug.Log($"Worker {Id} - Current State: {GetCurrentState()}");
     }
-
-    private void SetUpLoadingBar()
-    {
-
-    }
-
 
     private void SetUpStateMachine()
     {

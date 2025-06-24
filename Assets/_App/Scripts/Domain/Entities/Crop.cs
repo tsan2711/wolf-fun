@@ -1,7 +1,6 @@
 using System;
 using UnityEngine;
 
-
 [Serializable]
 public abstract class Crop : IPlantable
 {
@@ -17,13 +16,11 @@ public abstract class Crop : IPlantable
     public DateTime PlantedTime { get; private set; }
     public DateTime LastHarvestTime { get; private set; }
 
-    public Crop(int growthTimeMinutes = 5, int maxHarvests = 10)
+    public Crop(int growthTimeMinutes = 1, int maxHarvests = 10)
     {
-        // this.growthTimeMinutes = growthTimeMinutes;
-        this.growthTimeMinutes = 1;
-
+        this.growthTimeMinutes = growthTimeMinutes;
         this.maxHarvests = maxHarvests;
-        CurrentHarvests = 0;
+        CurrentHarvests = 0; // Start at 0
         PlantedTime = DateTime.MinValue;
         LastHarvestTime = DateTime.MinValue;
     }
@@ -32,6 +29,7 @@ public abstract class Crop : IPlantable
     {
         PlantedTime = plantTime;
         LastHarvestTime = plantTime;
+        // KHÔNG reset CurrentHarvests ở đây khi restore
     }
 
     public virtual bool IsReadyToHarvest()
@@ -66,18 +64,16 @@ public abstract class Crop : IPlantable
     public int GetCurrentHarvests() => CurrentHarvests;
     public int GetMaxHarvests() => MaxHarvests;
 
-    public virtual void SetMaxHarvests(int maxHarvests)
-    {
-        this.maxHarvests = maxHarvests;
-    }
+    // Save/load support methods
+    public virtual void SetMaxHarvests(int maxHarvests) => this.maxHarvests = maxHarvests;
+    public virtual void SetGrowthTime(int growthTimeMinutes) => this.growthTimeMinutes = growthTimeMinutes;
+    public virtual int GetGrowthTimeMinutes() => growthTimeMinutes;
 
-    public virtual void SetGrowthTime(int growthTimeMinutes)
-    {
-        this.growthTimeMinutes = growthTimeMinutes;
-    }
+    // QUAN TRỌNG: Set exact value, không validate
+    public void SetCurrentHarvests(int harvests) => CurrentHarvests = harvests;
 
-    public virtual int GetGrowthTimeMinutes()
-    {
-        return growthTimeMinutes;
-    }
+    public DateTime GetPlantedTime() => PlantedTime;
+    public DateTime GetLastHarvestTime() => LastHarvestTime;
+    public void SetPlantedTime(DateTime time) => PlantedTime = time;
+    public void SetLastHarvestTime(DateTime time) => LastHarvestTime = time;
 }

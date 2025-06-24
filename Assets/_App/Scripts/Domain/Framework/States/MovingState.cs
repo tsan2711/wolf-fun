@@ -23,8 +23,6 @@ public class MovingState : BaseState
 
     public override void Tick()
     {
-        // Movement handled by NavMeshAgent
-        // State transition handled by condition functions
     }
 
     public override void OnExit()

@@ -52,11 +52,6 @@ public class UpgradeUIManager : MonoBehaviour, IUIManager
         _upgradeItems[upgradeName.ToLower().Replace(" ", "_")] = item;
     }
 
-    public void Activate(bool v)
-    {
-        UpgradeContainer.gameObject.SetActive(v);
-    }
-
     public void UpdateUpgradeLevels(Dictionary<ProductType, int> upgradeLevels)
     {
         Debug.Log("Updating upgrade levels: " + upgradeLevels.Count);
@@ -72,4 +67,6 @@ public class UpgradeUIManager : MonoBehaviour, IUIManager
             }
         }
     }
+    public void Activate(bool v) => UpgradeContainer.gameObject.SetActive(v);
+
 }

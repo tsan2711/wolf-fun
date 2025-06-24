@@ -553,8 +553,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
-  m_Type: 0
+  m_Sprite: {fileID: 21300000, guid: 6e8cf939ed5c6a64983e9af4004e63c3, type: 3}
+  m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -580,6 +580,8 @@ MonoBehaviour:
   upgradeCostText: {fileID: 5831342329564746063}
   upgradeIcon: {fileID: 5845095597334366234}
   upgradeButton: {fileID: 8749912954047318067}
+  buttonHoverScale: 1.1
+  buttonClickScale: 0.9
 --- !u!1 &7340723862076253376
 GameObject:
   m_ObjectHideFlags: 0

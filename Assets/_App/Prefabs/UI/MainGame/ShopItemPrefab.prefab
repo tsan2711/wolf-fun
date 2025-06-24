@@ -281,8 +281,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
-  m_Type: 0
+  m_Sprite: {fileID: 21300000, guid: 872106fd027812e458f7a8c4d231eb8f, type: 3}
+  m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -307,6 +307,8 @@ MonoBehaviour:
   itemPriceText: {fileID: 1995888773513631947}
   itemIcon: {fileID: 7780805115269147005}
   buy1Button: {fileID: 5062604601162163127}
+  buttonHoverScale: 1.1
+  buttonClickScale: 0.9
 --- !u!1 &5347106918512453616
 GameObject:
   m_ObjectHideFlags: 0

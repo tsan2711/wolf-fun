@@ -3,10 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
-[System.Serializable]
+[Serializable]
 public class GameConfig
 {
-    [Header("Default Values (Fallback)")]
     public int WorkerCost = 500;
     public int EquipmentUpgradeCost = 500;
     public int PlotCost = 500;
@@ -144,10 +143,10 @@ public class GameConfig
         _harvestTimes["Blueberry"] = 15;
         _harvestTimes["Cow"] = 30;
 
-        _maxHarvests["Strawberry"] = 3;
-        _maxHarvests["Tomato"] = 4;
-        _maxHarvests["Blueberry"] = 2;
-        _maxHarvests["Cow"] = 10;
+        _maxHarvests["Strawberry"] = 20;
+        _maxHarvests["Tomato"] = 40;
+        _maxHarvests["Blueberry"] = 40;
+        _maxHarvests["Cow"] = 100;
     }
 
     private void LoadGeneralConfig()

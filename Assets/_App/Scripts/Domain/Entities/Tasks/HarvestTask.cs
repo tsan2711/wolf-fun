@@ -14,13 +14,17 @@ public class HarvestTask : IWorkTask
 
     public void Execute()
     {
-        var product = _plot.Harvest();
-        if (product.HasValue && product.Value != ProductType.None)
+        if (_plot.Content != null && _plot.CanHarvest)
         {
-            _farm.Inventory.AddProduct(product.Value, 1);
-            Debug.Log($"Worker harvested {product.Value} from plot {_plot.Id}");
+            var product = _plot.Harvest();
+            if (product.HasValue)
+            {
+                _farm.Inventory.AddProduct(product.Value, 1);
+                Debug.Log($"Worker harvested {product.Value} from plot {_plot.Id}");
+            }
         }
     }
+
 
     public TaskType GetTaskType() => TaskType.Harvest;
 }

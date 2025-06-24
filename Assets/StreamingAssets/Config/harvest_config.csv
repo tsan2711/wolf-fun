@@ -1,5 +1,5 @@
 CropType;HarvestTime;MaxHarvest
-Tomato;0;2
-Blueberry;0;2
-Strawberry;0;2
-Milk;0;100
+Tomato;10;40
+Blueberry;15;40
+Strawberry;5;20
+Milk;30;100

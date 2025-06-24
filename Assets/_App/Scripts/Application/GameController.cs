@@ -33,6 +33,7 @@ public class GameController : Singleton<GameController>
     public event Action<string> MessageDisplayed;
     private CancellationTokenSource _gameLoopCancellation;
 
+    protected override bool IsDontDestroyOnLoad => false;
 
     public Farm Farm => _farm;
 
@@ -41,7 +42,7 @@ public class GameController : Singleton<GameController>
     protected override void Awake()
     {
         base.Awake();
-        DontDestroyOnLoad(gameObject);
+        // DontDestroyOnLoad(gameObject);
         _config = new GameConfig();
 
         InitializeUI();
@@ -110,7 +111,7 @@ public class GameController : Singleton<GameController>
     {
         CleanupCurrentGame();
 
-        _farm = new Farm();
+        _farm = new Farm(false);
         _farm.FarmStateChanged += OnFarmStateChanged;
 
         // Create initial worker GameObjects
@@ -124,29 +125,89 @@ public class GameController : Singleton<GameController>
         OnFarmStateChanged(); // Update UI
     }
 
-
     public void LoadGame()
     {
-        var savedGame = SaveLoadSystem.LoadGame();
-        if (savedGame != null)
-        {
-            _farm = savedGame;
-            _farm.FarmStateChanged += OnFarmStateChanged;
-            var offlineTime = DateTime.Now - _farm.LastSaveTime;
-            if (offlineTime.TotalMinutes > 1)
-            {
-                CalculateOfflineProgress(offlineTime);
-            }
+        Debug.Log("Starting game load...");
 
-            CreateWorkerGameObjects();
-            StartGameLoop();
-            OnFarmStateChanged();
-        }
-        else
+        var savedGame = SaveLoadSystem.LoadGame();
+        if (savedGame == null)
         {
+            Debug.LogWarning("Could not load saved game, starting new game instead");
             StartNewGame();
         }
+
+
+
+
+        Debug.Log($"Loaded farm with {savedGame.Plots.Count} plots");
+
+        // Cleanup trước khi load
+        CleanupCurrentGame();
+
+        _farm = savedGame;
+
+        if (_farm == null)
+        {
+            StartNewGame();
+            return;
+        }
+
+        // Verify farm has necessary collections
+        if (_farm.Plots == null)
+        {
+            StartNewGame();
+            return;
+        }
+
+        if (_farm.WorkerIds == null)
+        {
+            StartNewGame();
+            return;
+        }
+
+        _farm.FarmStateChanged += OnFarmStateChanged;
+
+        // Calculate offline progress
+        var offlineTime = DateTime.Now - _farm.LastSaveTime;
+        if (offlineTime.TotalMinutes > 1)
+        {
+            CalculateOfflineProgress(offlineTime);
+        }
+
+        InitializeFarm();
+
+        // Tạo workers với safety check
+        try
+        {
+            CreateWorkerGameObjects();
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning($"Error creating workers: {e.Message}");
+        }
+
+        // Start game loop
+        StartGameLoop();
+
+        // Update UI
+        OnFarmStateChanged();
+
+        Debug.Log($"Game loaded successfully! Plots: {_farm.Plots.Count}, Workers: {_farm.WorkerIds.Count}");
     }
+
+    private void StartGameLoop()
+    {
+        StopGameLoop();
+        _gameLoopCancellation = new CancellationTokenSource();
+        var token = _gameLoopCancellation.Token;
+
+        AutoAssignTaskAsync(token).Forget();
+        AutoSaveGameAsync(token).Forget();
+        AutoCheckWinConditionAsync(token).Forget();
+        AutoUpdatePlotStatesAsync(token).Forget();
+    }
+
+
 
     private void CreateWorkerGameObjects()
     {
@@ -185,7 +246,7 @@ public class GameController : Singleton<GameController>
         if (navAgent == null)
             navAgent = workerGO.AddComponent<NavMeshAgent>();
 
-        // NEW: Generate random rarity and stats based on config
+        // Generate random rarity and stats based on config
         Rarity workerRarity = _config.GenerateWorkerRarity();
         float workerSpeed = _config.GenerateWorkerSpeed(workerRarity);
         float workerDuration = _config.GenerateWorkerDuration(workerRarity);
@@ -199,8 +260,6 @@ public class GameController : Singleton<GameController>
 
         // Subscribe to events
 
-
-        // Simple spawn: use farmContainer position (already on NavMesh)
         Vector3 spawnPosition = farmContainer.position + Vector3.right * workerId * 2f;
         navAgent.Warp(spawnPosition);
 
@@ -315,7 +374,6 @@ public class GameController : Singleton<GameController>
         return false;
     }
 
-    // Worker automation methods
     public void AutoAssignTasks()
     {
         var availableTasks = _farm.GetWorkTasks();
@@ -347,33 +405,25 @@ public class GameController : Singleton<GameController>
     }
 
 
-
     private bool AssignTaskToWorker(Worker worker, SimpleTask task)
     {
-        // Check if worker is still available
-        if (!worker.IsAvailable)
-        {
-            Debug.Log($"Worker {worker.Id} is no longer available");
-            return false;
-        }
+        if (!worker.IsAvailable) return false;
 
-        // Check if plot is still harvestable and not reserved
-        if (!task.Plot.CanHarvest)
+        bool canAssignTask = task.Type switch
         {
-            Debug.Log($"Plot {task.Plot.Id} is no longer harvestable");
-            return false;
-        }
+            TaskType.Harvest => task.Plot.CanHarvest, // Cả harvest và milk
+            TaskType.Plant => task.Plot.CanPlant && task.CropType.HasValue &&
+                             _farm.Inventory.GetSeedCount(task.CropType.Value) > 0,
+            _ => false
+        };
 
-        if (_farm.IsPlotReserved(task.Plot.Id))
-        {
-            Debug.Log($"Plot {task.Plot.Id} is already reserved");
-            return false;
-        }
+        if (!canAssignTask || _farm.IsPlotReserved(task.Plot.Id)) return false;
 
+        // CREATE WORK TASK
         IWorkTask workTask = task.Type switch
         {
-            TaskType.Harvest => new HarvestTask(task.Plot, _farm),
-            TaskType.Milk => new MilkTask(task.Plot, _farm),
+            TaskType.Harvest => new HarvestTask(task.Plot, _farm), // SỬ DỤNG CHUNG
+            TaskType.Plant => new PlantTask(task.Plot, task.CropType.Value, _farm),
             _ => null
         };
 
@@ -383,14 +433,10 @@ public class GameController : Singleton<GameController>
             Debug.Log($"Assigned {task.Type} task to Worker {worker.Id} for plot {task.Plot.Id}");
             return true;
         }
-        else
-        {
-            Debug.LogWarning($"No work task created for type: {task.Type}");
-            return false;
-        }
+
+        return false;
     }
 
-    // Shop methods
     public bool BuySeeds(CropType cropType, int amount)
     {
         var cost = _config.GetSeedCost(cropType) * amount;
@@ -637,33 +683,55 @@ public class GameController : Singleton<GameController>
         }
     }
 
-    private void StartGameLoop()
+
+
+    private async UniTaskVoid AutoUpdatePlotStatesAsync(CancellationToken token)
     {
-        StopGameLoop();
-        _gameLoopCancellation = new CancellationTokenSource();
-        var token = _gameLoopCancellation.Token;
+        while (!token.IsCancellationRequested)
+        {
+            await UniTask.Delay(10000, cancellationToken: token); // Check every 10 seconds
 
-        AutoAssignTaskAsync(token).Forget();
-        AutoSaveGameAsync(token).Forget();
-        AutoCheckWinConditionAsync(token).Forget();
+            if (_farm?.Plots != null)
+            {
+                bool anyStateChanged = false;
+
+                foreach (var plot in _farm.Plots)
+                {
+                    if (plot.Content != null)
+                    {
+                        // Check if content is ready to harvest and update plot state
+                        bool wasReady = plot.CanHarvest;
+                        bool isReady = plot.Content.IsReadyToHarvest();
+
+                        if (wasReady != isReady)
+                        {
+                            anyStateChanged = true;
+                            _farm.TriggerPlotStateChanged(plot);
+
+                            Debug.Log($"Plot {plot.Id} state changed - Ready to harvest: {isReady}");
+                        }
+                    }
+                }
+
+                if (anyStateChanged)
+                {
+                    OnFarmStateChanged();
+                }
+            }
+        }
     }
-
     private async UniTaskVoid AutoCheckWinConditionAsync(CancellationToken token)
     {
         while (!token.IsCancellationRequested)
         {
             if (_farm.Gold >= 1000000)
             {
-                ShowMessage("Congratulations! You've reached 1 million gold!");
-                // Handle win condition, e.g. show UI, stop game loop, etc.
-                _gameLoopCancellation.Cancel();
-                StopGameLoop();
+                FinishGame();
                 return;
             }
             await UniTask.Delay(1000, cancellationToken: token);
         }
     }
-
 
     private async UniTaskVoid AutoAssignTaskAsync(CancellationToken token)
     {
@@ -737,7 +805,7 @@ public class GameController : Singleton<GameController>
     }
 
     // Factory methods
-    private IPlantable CreateCrop(CropType cropType)
+    public IPlantable CreateCrop(CropType cropType)
     {
         int harvestTime = _config.GetHarvestTime(cropType.ToString());
         int maxHarvests = _config.GetMaxHarvests(cropType.ToString());
@@ -755,7 +823,7 @@ public class GameController : Singleton<GameController>
         };
     }
 
-    private IPlantable CreateAnimal(AnimalType animalType)
+    public IPlantable CreateAnimal(AnimalType animalType)
     {
         int harvestTime = _config.GetHarvestTime(animalType.ToString());
         int maxHarvests = _config.GetMaxHarvests(animalType.ToString());
@@ -1005,4 +1073,67 @@ public class GameController : Singleton<GameController>
     #endregion
 
 
+
+
+    private async void FinishGame()
+    {
+        ShowMessage("Congratulations! You've reached 1 million gold!");
+
+        await UniTask.Delay(2000);
+
+
+        // Stop any ongoing tasks
+        StopGameLoop();
+
+        // Clear farm data
+        CleanupFarmData();
+
+        CleanupUI();
+
+        // Clear workers
+        CleanupWorkers();
+
+        // Clear farm visuals
+        CleanupFarmVisuals();
+
+        DestroyInstance();
+
+
+        if (_gameLoopCancellation != null)
+        {
+            _gameLoopCancellation.Cancel();
+            _gameLoopCancellation.Dispose();
+            _gameLoopCancellation = null;
+        }
+
+        SceneController.Menu();
+
+        Debug.Log("Game finished successfully!");
+    }
+
+    private void DestroyInstance()
+    {
+        if (Instance == this)
+        {
+            Destroy(gameObject);
+        }
+    }
+
+    private void CleanupUI()
+    {
+        if (_gameUI != null)
+        {
+            // Unsubscribe from UI events
+            _gameUI.NewGameRequested -= StartNewGame;
+            _gameUI.ContinueGameRequested -= LoadGame;
+            _gameUI.BuySeedsRequested -= (cropType, amount) => BuySeeds(cropType, amount);
+            // ... unsubscribe all events
+
+            _gameUI = null;
+        }
+
+        // Clear events
+        FarmStateChanged = null;
+        MessageDisplayed = null;
+    }
 }

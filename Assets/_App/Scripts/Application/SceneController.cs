@@ -13,7 +13,6 @@ public class SceneController : Singleton<SceneController>
     [Header("Settings")]
     [SerializeField] private bool useLoading = true;
 
-    // Properties
     public bool IsLoading { get; private set; }
     public string CurrentScene => SceneManager.GetActiveScene().name;
 
