@@ -10,6 +10,9 @@
 
 ![Game Preview](path/to/game-preview.gif)
 
+<img width="945" alt="Screenshot 2025-06-24 at 17 08 31" src="https://github.com/user-attachments/assets/b99e0ca8-f719-4875-bbe2-e2f08aa9763f" />
+
+
 *Build your automated farm empire with intelligent AI workers*
 
 </div>
@@ -46,6 +49,9 @@ Focus on big decisions while AI handles the details. Buy land, hire workers, opt
 - **Auto-Harvest**: Workers know when crops are ready
 - **Growth Visualization**: Watch your farm come alive
 
+<img width="1710" alt="Screenshot 2025-06-24 at 17 11 41" src="https://github.com/user-attachments/assets/38130333-a845-4e8a-878f-c2a0df46d6c1" />
+
+
 ![Farming System](path/to/farming-demo.gif)
 
 </details>
@@ -62,6 +68,10 @@ Workers autonomously:
 - Navigate using Unity NavMesh
 - Complete work efficiently
 - Return to base when done
+
+
+<img width="868" alt="Screenshot 2025-06-24 at 17 12 50" src="https://github.com/user-attachments/assets/8f710340-514b-4bdf-af08-1025e2769d85" />
+
 
 ![AI Behavior](path/to/ai-demo.gif)
 
@@ -89,7 +99,9 @@ Workers autonomously:
 
 **Win Condition**: Reach 1,000,000 gold! 🏆
 
-![Economy](path/to/economy-demo.png)
+
+<img width="1710" alt="Screenshot 2025-06-24 at 17 13 27" src="https://github.com/user-attachments/assets/bf43ea6c-67d6-480e-b3ca-b9147fd55788" />
+
 
 </details>
 
