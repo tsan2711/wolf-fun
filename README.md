@@ -10,9 +10,6 @@
 
 ![Game Preview](path/to/game-preview.gif)
 
-<img width="945" alt="Screenshot 2025-06-24 at 17 08 31" src="https://github.com/user-attachments/assets/b99e0ca8-f719-4875-bbe2-e2f08aa9763f" />
-
-
 *Build your automated farm empire with intelligent AI workers*
 
 </div>
@@ -49,10 +46,10 @@ Focus on big decisions while AI handles the details. Buy land, hire workers, opt
 - **Auto-Harvest**: Workers know when crops are ready
 - **Growth Visualization**: Watch your farm come alive
 
-<img width="1710" alt="Screenshot 2025-06-24 at 17 11 41" src="https://github.com/user-attachments/assets/38130333-a845-4e8a-878f-c2a0df46d6c1" />
-
-
 ![Farming System](path/to/farming-demo.gif)
+
+<img width="1710" alt="Screenshot 2025-06-24 at 17 11 41" src="https://github.com/user-attachments/assets/6dc23be4-e21f-412d-ab4b-09ab66e899b2" />
+
 
 </details>
 
@@ -69,16 +66,10 @@ Workers autonomously:
 - Complete work efficiently
 - Return to base when done
 
-
-<img width="1709" alt="Screenshot 2025-06-24 at 17 20 12" src="https://github.com/user-attachments/assets/21c6f8bc-3469-426b-a941-7c1c9adfa3d4" />
-
-
-https://github.com/user-attachments/assets/07cf84c9-9ed4-40df-a1d8-e93f2fe15c1f
-
-
-
-
 ![AI Behavior](path/to/ai-demo.gif)
+
+<img width="1710" alt="Screenshot 2025-06-24 at 17 26 40" src="https://github.com/user-attachments/assets/fb90db67-1b17-4204-8a56-64379716d71e" />
+
 
 </details>
 
@@ -91,9 +82,8 @@ https://github.com/user-attachments/assets/07cf84c9-9ed4-40df-a1d8-e93f2fe15c1f
 
 ![Livestock](path/to/livestock-demo.gif)
 
-<img width="958" alt="Screenshot 2025-06-24 at 17 14 49" src="https://github.com/user-attachments/assets/4f2fb89e-d820-4b92-9e3f-1eb143136914" />
+<img width="958" alt="Screenshot 2025-06-24 at 17 14 49" src="https://github.com/user-attachments/assets/29bf1348-74c1-469b-bfa0-92fe3267ecbd" />
 
-<img width="1709" alt="Screenshot 2025-06-24 at 17 16 50" src="https://github.com/user-attachments/assets/490a7b78-fd57-4dde-8e31-f4436b06e4b9" />
 
 </details>
 
@@ -108,9 +98,9 @@ https://github.com/user-attachments/assets/07cf84c9-9ed4-40df-a1d8-e93f2fe15c1f
 
 **Win Condition**: Reach 1,000,000 gold! 🏆
 
+![Economy](path/to/economy-demo.png)
 
-<img width="1710" alt="Screenshot 2025-06-24 at 17 13 27" src="https://github.com/user-attachments/assets/bf43ea6c-67d6-480e-b3ca-b9147fd55788" />
-
+<img width="1709" alt="Screenshot 2025-06-24 at 17 27 06" src="https://github.com/user-attachments/assets/26fb8a6d-675d-4fe3-9d4c-d24e2ef90df2" />
 
 </details>
 
@@ -208,7 +198,7 @@ public class WorkerStateMachine {
 <div align="center">
 
 [![Download for Windows](https://img.shields.io/badge/Download-Windows-blue?style=for-the-badge&logo=windows)](https://github.com/tsan2711/wolf-fun/releases/download/v1.0/tansang-wolf-fun-testing-windows-v1.0.zip)
-[![Download for Mac](https://img.shields.io/badge/Download-macOS-black?style=for-the-badge&logo=apple)](https://github.com/tsan2711/wolf-fun/releases/download/v1.0/tansang-wolf-fun-tesing-macos-v1.0.zip)
+[![Download for Mac](https://img.shields.io/badge/Download-macOS-black?style=for-the-badge&logo=apple)](https://github.com/tsan2711/wolf-fun/releases/download/v1.0/tansang-wolf-fun-testing-macos-v1.0.zip)
 
 **System Requirements**: Windows 10+ or macOS 10.15+ • 4GB RAM • DirectX 11
 
@@ -216,15 +206,19 @@ public class WorkerStateMachine {
 
 ---
 
-## 🎮 Live Demo
+## 🎮 Gameplay Videos
 
 <div align="center">
 
-[![Watch Gameplay](https://img.shields.io/badge/🎬_Watch-Gameplay_Video-red?style=for-the-badge&logo=youtube)](https://drive.google.com/drive/folders/1OUMY42eAKklgRxVm_3R91rIgHGCRSlS5?usp=sharing)
+### 🤖 AI Workers in Action
 
-*See the AI workers in action - full gameplay showcase*
+https://github.com/user-attachments/assets/1d5d1c07-8b78-4ca7-9aea-dac4414171c4
 
-🤖 Smart AI behavior • 🌱 Automated farming • 💰 Economic strategy • 🎯 Win condition demo
+### 🌱 Farm Management Showcase  
+
+https://github.com/user-attachments/assets/8e4ded7b-2a68-421c-b111-27c02bfbd445
+
+*Watch the intelligent AI system automate your entire farm operation*
 
 </div>
 
