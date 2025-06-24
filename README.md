@@ -186,15 +186,10 @@ public class WorkerStateMachine {
 
 <div align="center">
 
-### Play Now!
-
 [![Download for Windows](https://img.shields.io/badge/Download-Windows-blue?style=for-the-badge&logo=windows)](https://github.com/tsan2711/wolf-fun/releases/latest)
 [![Download for Mac](https://img.shields.io/badge/Download-macOS-black?style=for-the-badge&logo=apple)](https://github.com/tsan2711/wolf-fun/releases/latest)
 
-**System Requirements:**
-- Windows 10+ or macOS 10.15+
-- 4GB RAM minimum
-- DirectX 11 compatible graphics
+**System Requirements**: Windows 10+ or macOS 10.15+ • 4GB RAM • DirectX 11
 
 </div>
 
@@ -204,17 +199,11 @@ public class WorkerStateMachine {
 
 <div align="center">
 
-### Try Before You Download
+[![Watch Gameplay](https://img.shields.io/badge/🎬_Watch-Gameplay_Video-red?style=for-the-badge&logo=youtube)]([https://tsan2711.github.io/wolf-fun-demo/](https://drive.google.com/drive/folders/1OUMY42eAKklgRxVm_3R91rIgHGCRSlS5?usp=sharing))
 
-[![Play Online Demo](https://img.shields.io/badge/🎮_Play_Online-Demo-green?style=for-the-badge)](https://tsan2711.github.io/wolf-fun-demo/)
+*See the AI workers in action - full gameplay showcase*
 
-*WebGL build - No download required!*
-
-**Demo Features:**
-- ✅ Full farming system
-- ✅ AI worker behavior
-- ✅ Economic gameplay
-- ⚠️ Save/Load disabled in demo
+🤖 Smart AI behavior • 🌱 Automated farming • 💰 Economic strategy • 🎯 Win condition demo
 
 </div>
 
